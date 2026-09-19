@@ -15,6 +15,7 @@ public class MecanumStraferChassis extends LinearOpMode {
     private DcMotor backLeftDrive   = null;
     private DcMotor backRightDrive  = null;
     private DcMotor feeder          = null;
+    private DcMotor shooter         = null;
     private CRServo leftServo       = null;
     private CRServo rightServo      = null;
 
@@ -28,15 +29,17 @@ public class MecanumStraferChassis extends LinearOpMode {
         frontRightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
         backLeftDrive   = hardwareMap.get(DcMotor.class, "backLeftDrive");
         backRightDrive  = hardwareMap.get(DcMotor.class, "backRightDrive");
-        feeder = hardwareMap.get(DcMotor.class, "feeder");
-        leftServo = hardwareMap.get(CRServo.class, "leftServo");
-        rightServo = hardwareMap.get(CRServo.class, "rightServo");
+        shooter         = hardwareMap.get(DcMotor.class, "shooterMotor");
+        feeder          = hardwareMap.get(DcMotor.class, "feeder");
+        leftServo       = hardwareMap.get(CRServo.class, "leftServo");
+        rightServo      = hardwareMap.get(CRServo.class, "rightServo");
 
         // Reverse left side motors so positive power moves the robot forward
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
+        shooter.setDirection(DcMotor.Direction.FORWARD);
         feeder.setDirection(DcMotor.Direction.FORWARD);
         leftServo.setDirection(CRServo.Direction.FORWARD);
         rightServo.setDirection(CRServo.Direction.REVERSE);
@@ -88,11 +91,14 @@ public class MecanumStraferChassis extends LinearOpMode {
             leftServo.setPower(gamepad1.right_trigger);
             rightServo.setPower(gamepad1.right_trigger);
 
-            // 7. Monitor outputs live via driver station telemetry text feeds
+            // 7. Control Shooter motor with L2 Trigger (gamepad1.left_trigger)
+            shooter.setPower(gamepad1.left_trigger);
+
+            // 8. Monitor outputs live via driver station telemetry text feeds
             telemetry.addData("Joystick Inputs", "Y: (%.2f), X: (%.2f), Turn: (%.2f)", forward, strafe, turn);
             telemetry.addData("Motor Target Powers", "FL: (%.2f) | FR: (%.2f)", flPower, frPower);
             telemetry.addData("Motor Target Powers", "BL: (%.2f) | BR: (%.2f)", blPower, brPower);
-            telemetry.addData("Servo + Feeder Powerw", "%.2f", gamepad1.right_trigger);
+            telemetry.addData("Servo + Feeder Power", "%.2f", gamepad1.right_trigger);
             telemetry.update();
         }
     }
