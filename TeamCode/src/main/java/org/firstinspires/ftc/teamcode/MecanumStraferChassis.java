@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.CRServo;
 
 @TeleOp(name = "MecanumStraferChassis", group = "Drive")
-public class MyFIRSTJavaOpMode extends LinearOpMode {
+public class MecanumStraferChassis extends LinearOpMode {
 
     // Motor declarations for the 4-motor Mecanum chassis
     private DcMotor frontLeftDrive  = null;
