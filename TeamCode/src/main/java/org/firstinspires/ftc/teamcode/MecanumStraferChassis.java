@@ -30,7 +30,7 @@ public class MecanumStraferChassis extends LinearOpMode {
         backLeftDrive   = hardwareMap.get(DcMotor.class, "backLeftDrive");
         backRightDrive  = hardwareMap.get(DcMotor.class, "backRightDrive");
         shooter         = hardwareMap.get(DcMotor.class, "shooterMotor");
-        feeder          = hardwareMap.get(DcMotor.class, "feeder");
+        feeder          = hardwareMap.get(DcMotor.class, "feederMotor");
         leftServo       = hardwareMap.get(CRServo.class, "leftServo");
         rightServo      = hardwareMap.get(CRServo.class, "rightServo");
 
