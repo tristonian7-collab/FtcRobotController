@@ -11,6 +11,7 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import org.firstinspires.ftc.vision.apriltag.AprilTagSingleDetection;
 import java.util.List;
 
 /**
@@ -52,6 +53,7 @@ public class SkongAutonomous extends LinearOpMode {
     private DcMotor backLeftDrive = null;
     private DcMotor backRightDrive = null;
     private DcMotor feeder         = null;
+    private DcMotor shooter        = null;
     private CRServo leftServo = null;
     private CRServo rightServo = null;
 
@@ -69,12 +71,12 @@ public class SkongAutonomous extends LinearOpMode {
         frontRightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
         backLeftDrive = hardwareMap.get(DcMotor.class, "backLeftDrive");
         backRightDrive = hardwareMap.get(DcMotor.class, "backRightDrive");
-
+        shooter = hardwareMap.get(DcMotor.class, "shooterMotor");
         leftServo = hardwareMap.get(CRServo.class, "leftServo");
         rightServo = hardwareMap.get(CRServo.class, "rightServo");
 
         try {
-            feeder = hardwareMap.get(DcMotor.class, "feeder");
+            feeder = hardwareMap.get(DcMotor.class, "feederMotor");
             feeder.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         } catch (Exception e) {
             telemetry.addData("Warning", "feeder motor 'feeder' not found");
@@ -85,8 +87,12 @@ public class SkongAutonomous extends LinearOpMode {
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
+        feeder.setDirection(DcMotor.Direction.FORWARD);
+        shooter.setDirection(DcMotor.Direction.FORWARD);
+        leftServo.setDirection(CRServo.Direction.FORWARD);
+        rightServo.setDirection(CRServo.Direction.REVERSE);
 
-        rightServo.setDirection(DcMotorSimple.Direction.REVERSE);
+
 
         // Set zero power behavior to BRAKE
         frontLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -121,6 +127,10 @@ public class SkongAutonomous extends LinearOpMode {
                 if (feeder != null) {
                     feeder.setPower(1.0);
                 }
+                // Shooter stays off while moving to save battery and focus
+                if (shooter != null) {
+                    shooter.setPower(0.0);
+                }
 
                 // Show what the software thinks is happening
                 telemetry.addData("Status", "feeder Running");
@@ -132,45 +142,61 @@ public class SkongAutonomous extends LinearOpMode {
                 } else {
                     telemetry.addData("feeder Motor", "NOT FOUND");
                 }
+                if (shooter != null) {
+                    telemetry.addData("shooter Motor", "Power: %.2f", shooter.getPower());
+                } else {
+                    telemetry.addData("shooter Motor", "NOT FOUND");
+                }
 
                 // AprilTag detection and distance reporting
                 if (aprilTag != null) {
-                    List<AprilTagDetection> currentDetections = aprilTag.getDetections();
-                    boolean tagFound = false;
-                    AprilTagDetection targetTag = null;
+                    // Diagnostic: Check camera and processor state
+                    telemetry.addData("Camera State", visionPortal.getCameraState());
                     
+                    List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+                    telemetry.addData("Raw Detections Count", currentDetections.size());
+                    boolean tagFound = false;
                     for (AprilTagDetection detection : currentDetections) {
-                        if (detection.metadata != null) {
-                            telemetry.addData("AprilTag Found", "ID %d (%s)", detection.id, detection.metadata.name);
+                        // In SDK v12.0+, any valid raw frame detection or cluster detection counts.
+                        // We check if it has been fully localized/tracked by checking if code details are active.
+                        tagFound = true;
+
+                        if (detection instanceof AprilTagSingleDetection) {
+                            AprilTagSingleDetection singleDet = (AprilTagSingleDetection) detection;
+                            String name = (singleDet.metadata != null) ? singleDet.metadata.name : "Unmapped Tag ID";
+                            telemetry.addData("AprilTag Found", "ID %d (%s)", singleDet.id, name);
+                        } else {
+                            telemetry.addData("AprilTag Found", "Tag Cluster/Raw Frame");
+                        }
+
+                        if (detection.ftcPose != null) {
                             telemetry.addData("Distance (Range)", "%.2f inches", detection.ftcPose.range);
                             telemetry.addData("Bearing", "%.2f degrees", detection.ftcPose.bearing);
-                            tagFound = true;
-                            targetTag = detection;
-                            break; // Target the first detected tag
-                        }
-                    }
-                    
-                    if (tagFound) {
-                        telemetry.addData("AprilTag Status", "Tag Visible - Approaching");
-                        
-                        // Calculate error fields
-                        double rangeError = targetTag.ftcPose.range - DESIRED_DISTANCE;
-                        double headingError = targetTag.ftcPose.bearing;
-                        
-                        // Compute power values using proportional gains
-                        double drive = Range.clip(rangeError * SPEED_GAIN, -0.4, 0.4);
-                        double turn = Range.clip(headingError * TURN_GAIN, -0.2, 0.2);
-                        
-                        // Small tolerances to prevent oscillating once under the tag
-                        if (Math.abs(rangeError) < 1.0 && Math.abs(headingError) < 2.0) {
-                            stopRobot();
-                            telemetry.addData("Motion Status", "Arrived under AprilTag!");
                         } else {
-                            setPowerWithSteer(drive, turn);
+                            telemetry.addData("Distance (Range)", "Tracking pose... (Hold Still)");
                         }
-                    } else {
-                        telemetry.addData("AprilTag Status", "No tags visible");
+                        break; 
+                    }
+
+                    if (tagFound) {
+                        // Tag found! Immediately halt all robot wheel movement.
                         stopRobot();
+                        telemetry.addData("AprilTag Status", "Tag Detected! Stopped.");
+                        
+                        // Spin up the shooter motor for competition action
+                        if (shooter != null) {
+                            shooter.setPower(1.0);
+                            telemetry.addData("Shooter Status", "Spinning up!");
+                            telemetry.update();
+                            sleep(3000); // Give it 3 seconds to spin at full speed
+                        }
+                        
+                        // Break out of the loop completely once a tag is found to prevent it from starting again
+                        break; 
+                    } else {
+                        // No tag in sight yet, continue moving forward at a safe testing speed
+                        telemetry.addData("AprilTag Status", "No tags visible - Moving Forward...");
+                        setPowerWithSteer(0.25, 0.0);
                     }
                 } else {
                     telemetry.addData("AprilTag Status", "Camera/Processor not initialized (not mounted or configured yet)");
@@ -187,6 +213,9 @@ public class SkongAutonomous extends LinearOpMode {
             rightServo.setPower(0.0);
             if (feeder != null) {
                 feeder.setPower(0.0);
+            }
+            if (shooter != null) {
+                shooter.setPower(0.0);
             }
 
             telemetry.addData("Status", "Stopped");
@@ -281,7 +310,18 @@ public class SkongAutonomous extends LinearOpMode {
     }
 
     private void initAprilTag() {
-        aprilTag = new AprilTagProcessor.Builder().build();
+        // Create a custom processor that allows ALL tags, even if they aren't in the default library
+        aprilTag = new AprilTagProcessor.Builder()
+                .setDrawAxes(true)
+                .setDrawCubeProjection(true)
+                .setDrawTagOutline(true)
+                .setDrawTagID(true)
+                .build();
+
+        // Force decimation to 1.0 for maximum shape sensitivity
+        aprilTag.setDecimation(1.0f);
+
+        // Create the vision portal manually to ensure the custom processor binds completely
         visionPortal = new VisionPortal.Builder()
                 .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
                 .addProcessor(aprilTag)

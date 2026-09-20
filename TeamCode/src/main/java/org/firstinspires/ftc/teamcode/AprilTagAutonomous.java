@@ -16,6 +16,7 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import org.firstinspires.ftc.vision.apriltag.AprilTagSingleDetection;
 
 import java.util.List;
 
@@ -123,7 +124,12 @@ public class AprilTagAutonomous extends LinearOpMode {
                     moveRobot(drive, turn);
                 }
 
-                telemetry.addData("Target Found", "ID %d (%s)", targetTag.id, targetTag.metadata.name);
+                if (targetTag instanceof AprilTagSingleDetection) {
+                    AprilTagSingleDetection singleDet = (AprilTagSingleDetection) targetTag;
+                    telemetry.addData("Target Found", "ID %d (%s)", singleDet.id, singleDet.metadata.name);
+                } else {
+                    telemetry.addData("Target Found", "Unknown AprilTag structure");
+                }
                 telemetry.addData("Range", "%5.1f inches", targetTag.ftcPose.range);
                 telemetry.addData("Bearing", "%3.0f degrees", targetTag.ftcPose.bearing);
             } else {
@@ -161,9 +167,12 @@ public class AprilTagAutonomous extends LinearOpMode {
     private AprilTagDetection findTag(int targetId) {
         List<AprilTagDetection> currentDetections = aprilTag.getDetections();
         for (AprilTagDetection detection : currentDetections) {
-            if (detection.metadata != null) {
-                if (targetId < 0 || detection.id == targetId) {
-                    return detection;
+            if (detection instanceof AprilTagSingleDetection) {
+                AprilTagSingleDetection singleDet = (AprilTagSingleDetection) detection;
+                if (singleDet.metadata != null) {
+                    if (targetId < 0 || singleDet.id == targetId) {
+                        return detection;
+                    }
                 }
             }
         }
