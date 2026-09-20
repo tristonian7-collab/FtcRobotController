@@ -52,7 +52,7 @@ public class SkongAutonomous extends LinearOpMode {
     private DcMotor frontRightDrive = null;
     private DcMotor backLeftDrive = null;
     private DcMotor backRightDrive = null;
-    private DcMotor feeder         = null;
+    private CRServo feeder         = null;
     private DcMotor shooter        = null;
     private CRServo leftServo = null;
     private CRServo rightServo = null;
@@ -76,10 +76,9 @@ public class SkongAutonomous extends LinearOpMode {
         rightServo = hardwareMap.get(CRServo.class, "rightServo");
 
         try {
-            feeder = hardwareMap.get(DcMotor.class, "feederMotor");
-            feeder.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            feeder = hardwareMap.get(CRServo.class, "feederServo");
         } catch (Exception e) {
-            telemetry.addData("Warning", "feeder motor 'feeder' not found");
+            telemetry.addData("Warning", "feeder servo 'feederServo' not found");
         }
 
         // Set directions
@@ -87,7 +86,9 @@ public class SkongAutonomous extends LinearOpMode {
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        feeder.setDirection(DcMotor.Direction.FORWARD);
+        if (feeder != null) {
+            feeder.setDirection(CRServo.Direction.REVERSE);
+        }
         shooter.setDirection(DcMotor.Direction.FORWARD);
         leftServo.setDirection(CRServo.Direction.FORWARD);
         rightServo.setDirection(CRServo.Direction.REVERSE);
@@ -138,9 +139,9 @@ public class SkongAutonomous extends LinearOpMode {
                 telemetry.addData("Servo L", "Power: %.2f", leftServo.getPower());
                 telemetry.addData("Servo R", "Power: %.2f", rightServo.getPower());
                 if (feeder != null) {
-                    telemetry.addData("feeder Motor", "Power: %.2f", feeder.getPower());
+                    telemetry.addData("feeder Servo", "Power: %.2f", feeder.getPower());
                 } else {
-                    telemetry.addData("feeder Motor", "NOT FOUND");
+                    telemetry.addData("feeder Servo", "NOT FOUND");
                 }
                 if (shooter != null) {
                     telemetry.addData("shooter Motor", "Power: %.2f", shooter.getPower());

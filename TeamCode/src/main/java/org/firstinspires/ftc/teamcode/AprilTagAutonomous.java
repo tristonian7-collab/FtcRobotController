@@ -52,7 +52,7 @@ public class AprilTagAutonomous extends LinearOpMode {
             leftDrive  = hardwareMap.get(DcMotor.class, "left_drive");
             rightDrive = hardwareMap.get(DcMotor.class, "right_drive");
             shooter    = hardwareMap.get(DcMotor.class, "shooter");
-            feeder     = hardwareMap.get(Servo.class, "feeder");
+            feeder     = hardwareMap.get(Servo.class, "feederServo");
 
             leftDrive.setDirection(DcMotor.Direction.REVERSE);
             rightDrive.setDirection(DcMotor.Direction.FORWARD);

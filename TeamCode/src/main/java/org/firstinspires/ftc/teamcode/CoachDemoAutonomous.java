@@ -2,31 +2,46 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import org.firstinspires.ftc.vision.apriltag.AprilTagSingleDetection;
+import java.util.List;
 
 /**
  * Autonomous OpMode for Mecanum wheel chassis.
  * Logic:
- * 1. Wait 2 seconds.
- * 2. Perform a square path 4 times.
- * 3. Each square consists of 4 segments: forward and then turn right.
+ * 1. Moves forward until any April Tag is detected.
+ * 2. Once a tag is detected, stop drive motors.
+ * 3. Spin up the shooter for SHOOTER_SPINUP_SECONDS to build momentum.
+ * 4. Then continuously run the feeder to fire balls, forever.
  */
 @Autonomous(name = "CoachDemoAutonomous", group = "StarterBot")
 public class CoachDemoAutonomous extends LinearOpMode {
 
     // --- Adjustable Constants ---
-    public static final double DRIVE_SPEED_SCALE = 5.0; // Speed 1-10
-    public static final double FORWARD_SECONDS = 1.5;
-    public static final double TURN_SECONDS = 0.8;      // Estimated time to turn 90 degrees
+    public static final double DRIVE_SPEED = 0.25;
+    public static final double SHOOTER_SPINUP_SECONDS = 1.5;
     // ----------------------------
 
     private DcMotor frontLeftDrive = null;
     private DcMotor frontRightDrive = null;
     private DcMotor backLeftDrive = null;
     private DcMotor backRightDrive = null;
+    private CRServo feeder = null;
+    private DcMotor shooter = null;
+    private CRServo leftServo = null;
+    private CRServo rightServo = null;
 
     private final ElapsedTime runtime = new ElapsedTime();
+
+    // --- Vision Members ---
+    private VisionPortal visionPortal = null;
+    private AprilTagProcessor aprilTag = null;
 
     @Override
     public void runOpMode() {
@@ -36,65 +51,138 @@ public class CoachDemoAutonomous extends LinearOpMode {
         frontRightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
         backLeftDrive = hardwareMap.get(DcMotor.class, "backLeftDrive");
         backRightDrive = hardwareMap.get(DcMotor.class, "backRightDrive");
+        shooter = hardwareMap.get(DcMotor.class, "shooterMotor");
+        
+        try {
+            feeder = hardwareMap.get(CRServo.class, "feederServo");
+        } catch (Exception e) {
+            telemetry.addData("Warning", "feeder servo 'feederServo' not found");
+        }
 
-        // Set directions (Matching Teleop configuration)
+        try {
+            leftServo = hardwareMap.get(CRServo.class, "leftServo");
+            rightServo = hardwareMap.get(CRServo.class, "rightServo");
+        } catch (Exception e) {
+            telemetry.addData("Warning", "Intake servos 'leftServo'/'rightServo' not found");
+        }
+
+        // Set directions (Matching MecanumStraferChassis configuration)
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
+        shooter.setDirection(DcMotor.Direction.FORWARD);
+        
+        if (feeder != null) {
+            feeder.setDirection(CRServo.Direction.REVERSE);
+        }
+        if (leftServo != null) {
+            leftServo.setDirection(CRServo.Direction.FORWARD);
+        }
+        if (rightServo != null) {
+            rightServo.setDirection(CRServo.Direction.REVERSE);
+        }
 
-        // Set zero power behavior to BRAKE for more precision
+        // Set zero power behavior to BRAKE
         frontLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         frontRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        double drivePower = DRIVE_SPEED_SCALE / 10.0;
+        // Initialize Vision
+        try {
+            initAprilTag();
+        } catch (Exception e) {
+            telemetry.addData("Vision Error", "Webcam 1 not found or failed to initialize.");
+        }
 
-        telemetry.addData("Status", "Initialized. Speed: %.1f", DRIVE_SPEED_SCALE);
+        telemetry.addData("Status", "Initialized. Ready for Autonomous.");
         telemetry.update();
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
         runtime.reset();
 
-        // 1. Initial wait for 2 seconds
-        telemetry.addData("Status", "Waiting for 2 seconds...");
-        telemetry.update();
-        sleep(2000);
+        if (opModeIsActive()) {
 
-        // Loop for 4 squares
-        for (int squareCount = 1; squareCount <= 4 && opModeIsActive(); squareCount++) {
-            
-            // Each square has 4 sides/turns
-            for (int sideCount = 1; sideCount <= 4 && opModeIsActive(); sideCount++) {
-                
-                // Update Telemetry
-                telemetry.addData("Path", "Square %d of 4", squareCount);
-                telemetry.addData("Side", "Segment %d of 4", sideCount);
+            boolean hasDetectedTag = false;
+
+            // Phase 1: Drive forward until an AprilTag is detected. Feeder stays off.
+            while (opModeIsActive() && !hasDetectedTag) {
+
+                if (aprilTag != null) {
+                    List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+                    if (!currentDetections.isEmpty()) {
+                        hasDetectedTag = true;
+                    }
+                }
+
+                if (hasDetectedTag) {
+                    // Tag found! Stop movement.
+                    stopRobot();
+                    telemetry.addData("Status", "AprilTag Detected! Stopping.");
+                } else {
+                    // No tag yet, continue moving forward
+                    moveForward(DRIVE_SPEED);
+                    telemetry.addData("Status", "Moving forward, searching for tags...");
+                }
+
+                telemetry.update();
+                idle();
+            }
+
+            // Phase 2: Spin up the shooter first (feeder still off) so the ball
+            // launches instead of just rolling on the shooter wheel.
+            if (opModeIsActive()) {
+                shooter.setPower(1.0);
+                telemetry.addData("Status", "Spinning up shooter...");
                 telemetry.update();
 
-                // 2. Go Forward
-                moveForward(drivePower);
-                sleep((long)(FORWARD_SECONDS * 1000));
-                
-                // Stop before turning
-                stopRobot();
-                sleep(200);
+                ElapsedTime spinupTimer = new ElapsedTime();
+                while (opModeIsActive() && spinupTimer.seconds() < SHOOTER_SPINUP_SECONDS) {
+                    idle();
+                }
+            }
 
-                // 3. Turn Right
-                turnRight(drivePower);
-                sleep((long)(TURN_SECONDS * 1000));
-                
-                // Stop before next segment
-                stopRobot();
-                sleep(200);
+            // Phase 3: Shooter is up to speed, now continuously feed balls forever.
+            if (feeder != null) {
+                feeder.setPower(1.0);
+            }
+            if (leftServo != null) {
+                leftServo.setPower(1.0);
+            }
+            if (rightServo != null) {
+                rightServo.setPower(1.0);
+            }
+
+            while (opModeIsActive()) {
+                shooter.setPower(1.0);
+                telemetry.addData("Status", "Shooter at speed. Feeding continuously...");
+                telemetry.update();
+                idle();
             }
         }
 
-        telemetry.addData("Status", "Completed 4 squares.");
-        telemetry.update();
-        sleep(2000);
+        // Clean up vision portal resource when OpMode is done
+        if (visionPortal != null) {
+            visionPortal.close();
+        }
+    }
+
+    private void initAprilTag() {
+        aprilTag = new AprilTagProcessor.Builder()
+                .setDrawAxes(true)
+                .setDrawCubeProjection(true)
+                .setDrawTagOutline(true)
+                .setDrawTagID(true)
+                .build();
+
+        aprilTag.setDecimation(1.0f);
+
+        visionPortal = new VisionPortal.Builder()
+                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
+                .addProcessor(aprilTag)
+                .build();
     }
 
     private void moveForward(double power) {
@@ -102,14 +190,6 @@ public class CoachDemoAutonomous extends LinearOpMode {
         frontRightDrive.setPower(power);
         backLeftDrive.setPower(power);
         backRightDrive.setPower(power);
-    }
-
-    private void turnRight(double power) {
-        // To turn right: Left wheels forward, Right wheels backward
-        frontLeftDrive.setPower(power);
-        frontRightDrive.setPower(-power);
-        backLeftDrive.setPower(power);
-        backRightDrive.setPower(-power);
     }
 
     private void stopRobot() {

@@ -14,7 +14,7 @@ public class MecanumStraferChassis extends LinearOpMode {
     private DcMotor frontRightDrive = null;
     private DcMotor backLeftDrive   = null;
     private DcMotor backRightDrive  = null;
-    private DcMotor feeder          = null;
+    private CRServo feeder          = null;
     private DcMotor shooter         = null;
     private CRServo leftServo       = null;
     private CRServo rightServo      = null;
@@ -30,7 +30,7 @@ public class MecanumStraferChassis extends LinearOpMode {
         backLeftDrive   = hardwareMap.get(DcMotor.class, "backLeftDrive");
         backRightDrive  = hardwareMap.get(DcMotor.class, "backRightDrive");
         shooter         = hardwareMap.get(DcMotor.class, "shooterMotor");
-        feeder          = hardwareMap.get(DcMotor.class, "feederMotor");
+        feeder          = hardwareMap.get(CRServo.class, "feederServo");
         leftServo       = hardwareMap.get(CRServo.class, "leftServo");
         rightServo      = hardwareMap.get(CRServo.class, "rightServo");
 
@@ -40,7 +40,7 @@ public class MecanumStraferChassis extends LinearOpMode {
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         shooter.setDirection(DcMotor.Direction.FORWARD);
-        feeder.setDirection(DcMotor.Direction.FORWARD);
+        feeder.setDirection(CRServo.Direction.REVERSE);
         leftServo.setDirection(CRServo.Direction.FORWARD);
         rightServo.setDirection(CRServo.Direction.REVERSE);
 
