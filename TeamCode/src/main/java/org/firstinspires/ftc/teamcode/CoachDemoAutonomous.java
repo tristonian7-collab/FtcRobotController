@@ -32,8 +32,8 @@ public class CoachDemoAutonomous extends LinearOpMode {
     private DcMotor frontRightDrive = null;
     private DcMotor backLeftDrive = null;
     private DcMotor backRightDrive = null;
-    private CRServo feeder = null;
     private DcMotor shooter = null;
+    private DcMotor feeder = null;
     private CRServo leftServo = null;
     private CRServo rightServo = null;
 
@@ -52,11 +52,11 @@ public class CoachDemoAutonomous extends LinearOpMode {
         backLeftDrive = hardwareMap.get(DcMotor.class, "backLeftDrive");
         backRightDrive = hardwareMap.get(DcMotor.class, "backRightDrive");
         shooter = hardwareMap.get(DcMotor.class, "shooterMotor");
-        
+
         try {
-            feeder = hardwareMap.get(CRServo.class, "feederServo");
+            feeder = hardwareMap.get(DcMotor.class, "feederMotor");
         } catch (Exception e) {
-            telemetry.addData("Warning", "feeder servo 'feederServo' not found");
+            telemetry.addData("Warning", "feeder motor 'feederMotor' not found");
         }
 
         try {
@@ -72,9 +72,9 @@ public class CoachDemoAutonomous extends LinearOpMode {
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         shooter.setDirection(DcMotor.Direction.FORWARD);
-        
+
         if (feeder != null) {
-            feeder.setDirection(CRServo.Direction.REVERSE);
+            feeder.setDirection(DcMotor.Direction.REVERSE);
         }
         if (leftServo != null) {
             leftServo.setDirection(CRServo.Direction.FORWARD);

@@ -116,6 +116,11 @@ public class SkongAutonomous extends LinearOpMode {
         runtime.reset();
 
         if (opModeIsActive()) {
+            // Spin the feeder continuously for the entire OpMode.
+            if (feeder != null) {
+                feeder.setPower(1.0);
+            }
+
             // Run for 10 seconds or until STOP is pressed
             ElapsedTime timer = new ElapsedTime();
             timer.reset();
@@ -208,13 +213,10 @@ public class SkongAutonomous extends LinearOpMode {
                 idle();
             }
 
-            // Stop everything
+            // Stop everything (feeder keeps spinning at all times, per design)
             stopRobot();
             leftServo.setPower(0.0);
             rightServo.setPower(0.0);
-            if (feeder != null) {
-                feeder.setPower(0.0);
-            }
             if (shooter != null) {
                 shooter.setPower(0.0);
             }
