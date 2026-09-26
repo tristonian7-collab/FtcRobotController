@@ -52,7 +52,8 @@ public class SkongAutonomous extends LinearOpMode {
     private DcMotor frontRightDrive = null;
     private DcMotor backLeftDrive = null;
     private DcMotor backRightDrive = null;
-    private CRServo feeder         = null;
+    private CRServo feederServo    = null;
+    private DcMotor feederMotor    = null;
     private DcMotor shooter        = null;
     private CRServo leftServo = null;
     private CRServo rightServo = null;
@@ -76,9 +77,15 @@ public class SkongAutonomous extends LinearOpMode {
         rightServo = hardwareMap.get(CRServo.class, "rightServo");
 
         try {
-            feeder = hardwareMap.get(CRServo.class, "feederServo");
+            feederServo = hardwareMap.get(CRServo.class, "feederServo");
         } catch (Exception e) {
             telemetry.addData("Warning", "feeder servo 'feederServo' not found");
+        }
+
+        try {
+            feederMotor = hardwareMap.get(DcMotor.class, "feederMotor");
+        } catch (Exception e) {
+            telemetry.addData("Warning", "feeder motor 'feederMotor' not found");
         }
 
         // Set directions
@@ -86,8 +93,11 @@ public class SkongAutonomous extends LinearOpMode {
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        if (feeder != null) {
-            feeder.setDirection(CRServo.Direction.REVERSE);
+        if (feederServo != null) {
+            feederServo.setDirection(CRServo.Direction.REVERSE);
+        }
+        if (feederMotor != null) {
+            feederMotor.setDirection(DcMotor.Direction.REVERSE);
         }
         shooter.setDirection(DcMotor.Direction.FORWARD);
         leftServo.setDirection(CRServo.Direction.FORWARD);
@@ -116,9 +126,13 @@ public class SkongAutonomous extends LinearOpMode {
         runtime.reset();
 
         if (opModeIsActive()) {
-            // Spin the feeder continuously for the entire OpMode.
-            if (feeder != null) {
-                feeder.setPower(1.0);
+            // Spin the intake group (leftServo, rightServo, feederMotor, feederServo)
+            // continuously for the entire OpMode. These must always run together.
+            if (feederMotor != null) {
+                feederMotor.setPower(1.0);
+            }
+            if (feederServo != null) {
+                feederServo.setPower(1.0);
             }
 
             // Run for 10 seconds or until STOP is pressed
@@ -126,12 +140,15 @@ public class SkongAutonomous extends LinearOpMode {
             timer.reset();
             
             while (opModeIsActive() && timer.seconds() < 10) {
-                // Set power to everything
+                // Intake group: leftServo, rightServo, feederMotor, feederServo always together
                 leftServo.setPower(1.0);
                 rightServo.setPower(1.0);
-                
-                if (feeder != null) {
-                    feeder.setPower(1.0);
+
+                if (feederMotor != null) {
+                    feederMotor.setPower(1.0);
+                }
+                if (feederServo != null) {
+                    feederServo.setPower(1.0);
                 }
                 // Shooter stays off while moving to save battery and focus
                 if (shooter != null) {
@@ -143,10 +160,15 @@ public class SkongAutonomous extends LinearOpMode {
                 telemetry.addData("Timer", "%.1f / 10.0s", timer.seconds());
                 telemetry.addData("Servo L", "Power: %.2f", leftServo.getPower());
                 telemetry.addData("Servo R", "Power: %.2f", rightServo.getPower());
-                if (feeder != null) {
-                    telemetry.addData("feeder Servo", "Power: %.2f", feeder.getPower());
+                if (feederServo != null) {
+                    telemetry.addData("feeder Servo", "Power: %.2f", feederServo.getPower());
                 } else {
                     telemetry.addData("feeder Servo", "NOT FOUND");
+                }
+                if (feederMotor != null) {
+                    telemetry.addData("feeder Motor", "Power: %.2f", feederMotor.getPower());
+                } else {
+                    telemetry.addData("feeder Motor", "NOT FOUND");
                 }
                 if (shooter != null) {
                     telemetry.addData("shooter Motor", "Power: %.2f", shooter.getPower());
@@ -213,10 +235,17 @@ public class SkongAutonomous extends LinearOpMode {
                 idle();
             }
 
-            // Stop everything (feeder keeps spinning at all times, per design)
+            // Stop everything. Intake group (leftServo, rightServo, feederMotor,
+            // feederServo) always stops together since they must run in sync.
             stopRobot();
             leftServo.setPower(0.0);
             rightServo.setPower(0.0);
+            if (feederMotor != null) {
+                feederMotor.setPower(0.0);
+            }
+            if (feederServo != null) {
+                feederServo.setPower(0.0);
+            }
             if (shooter != null) {
                 shooter.setPower(0.0);
             }

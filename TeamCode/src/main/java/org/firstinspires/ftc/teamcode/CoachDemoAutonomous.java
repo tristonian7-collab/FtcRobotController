@@ -33,7 +33,8 @@ public class CoachDemoAutonomous extends LinearOpMode {
     private DcMotor backLeftDrive = null;
     private DcMotor backRightDrive = null;
     private DcMotor shooter = null;
-    private DcMotor feeder = null;
+    private DcMotor feederMotor = null;
+    private CRServo feederServo = null;
     private CRServo leftServo = null;
     private CRServo rightServo = null;
 
@@ -54,9 +55,15 @@ public class CoachDemoAutonomous extends LinearOpMode {
         shooter = hardwareMap.get(DcMotor.class, "shooterMotor");
 
         try {
-            feeder = hardwareMap.get(DcMotor.class, "feederMotor");
+            feederMotor = hardwareMap.get(DcMotor.class, "feederMotor");
         } catch (Exception e) {
             telemetry.addData("Warning", "feeder motor 'feederMotor' not found");
+        }
+
+        try {
+            feederServo = hardwareMap.get(CRServo.class, "feederServo");
+        } catch (Exception e) {
+            telemetry.addData("Warning", "feeder servo 'feederServo' not found");
         }
 
         try {
@@ -73,8 +80,11 @@ public class CoachDemoAutonomous extends LinearOpMode {
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         shooter.setDirection(DcMotor.Direction.FORWARD);
 
-        if (feeder != null) {
-            feeder.setDirection(DcMotor.Direction.REVERSE);
+        if (feederMotor != null) {
+            feederMotor.setDirection(DcMotor.Direction.REVERSE);
+        }
+        if (feederServo != null) {
+            feederServo.setDirection(CRServo.Direction.REVERSE);
         }
         if (leftServo != null) {
             leftServo.setDirection(CRServo.Direction.FORWARD);
@@ -144,9 +154,14 @@ public class CoachDemoAutonomous extends LinearOpMode {
                 }
             }
 
-            // Phase 3: Shooter is up to speed, now continuously feed balls forever.
-            if (feeder != null) {
-                feeder.setPower(1.0);
+            // Phase 3: Shooter is up to speed, now continuously run the intake
+            // group forever. leftServo, rightServo, feederMotor, and feederServo
+            // must always run together.
+            if (feederMotor != null) {
+                feederMotor.setPower(1.0);
+            }
+            if (feederServo != null) {
+                feederServo.setPower(1.0);
             }
             if (leftServo != null) {
                 leftServo.setPower(1.0);

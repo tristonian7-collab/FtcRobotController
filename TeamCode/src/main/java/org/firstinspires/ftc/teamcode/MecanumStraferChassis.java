@@ -14,7 +14,8 @@ public class MecanumStraferChassis extends LinearOpMode {
     private DcMotor frontRightDrive = null;
     private DcMotor backLeftDrive   = null;
     private DcMotor backRightDrive  = null;
-    private CRServo feeder          = null;
+    private CRServo feederServo     = null;
+    private DcMotor feederMotor     = null;
     private DcMotor shooter         = null;
     private CRServo leftServo       = null;
     private CRServo rightServo      = null;
@@ -30,7 +31,8 @@ public class MecanumStraferChassis extends LinearOpMode {
         backLeftDrive   = hardwareMap.get(DcMotor.class, "backLeftDrive");
         backRightDrive  = hardwareMap.get(DcMotor.class, "backRightDrive");
         shooter         = hardwareMap.get(DcMotor.class, "shooterMotor");
-        feeder          = hardwareMap.get(CRServo.class, "feederServo");
+        feederServo     = hardwareMap.get(CRServo.class, "feederServo");
+        feederMotor     = hardwareMap.get(DcMotor.class, "feederMotor");
         leftServo       = hardwareMap.get(CRServo.class, "leftServo");
         rightServo      = hardwareMap.get(CRServo.class, "rightServo");
 
@@ -40,7 +42,8 @@ public class MecanumStraferChassis extends LinearOpMode {
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         shooter.setDirection(DcMotor.Direction.FORWARD);
-        feeder.setDirection(CRServo.Direction.REVERSE);
+        feederServo.setDirection(CRServo.Direction.REVERSE);
+        feederMotor.setDirection(DcMotor.Direction.REVERSE);
         leftServo.setDirection(CRServo.Direction.FORWARD);
         rightServo.setDirection(CRServo.Direction.REVERSE);
 
@@ -86,10 +89,12 @@ public class MecanumStraferChassis extends LinearOpMode {
             backLeftDrive.setPower(blPower);
             backRightDrive.setPower(brPower);
 
-            // 6. Control Servo and Feeder motor with R2 Trigger (gamepad1.right_trigger)
-            feeder.setPower(gamepad1.right_trigger);
-            leftServo.setPower(gamepad1.right_trigger);
-            rightServo.setPower(gamepad1.right_trigger);
+            // 6. Control Intake Group (leftServo, rightServo, feederMotor, feederServo) together with R2 Trigger
+            double intakePower = gamepad1.right_trigger;
+            leftServo.setPower(intakePower);
+            rightServo.setPower(intakePower);
+            feederMotor.setPower(intakePower);
+            feederServo.setPower(intakePower);
 
             // 7. Control Shooter motor with L2 Trigger (gamepad1.left_trigger)
             shooter.setPower(gamepad1.left_trigger);
@@ -98,7 +103,7 @@ public class MecanumStraferChassis extends LinearOpMode {
             telemetry.addData("Joystick Inputs", "Y: (%.2f), X: (%.2f), Turn: (%.2f)", forward, strafe, turn);
             telemetry.addData("Motor Target Powers", "FL: (%.2f) | FR: (%.2f)", flPower, frPower);
             telemetry.addData("Motor Target Powers", "BL: (%.2f) | BR: (%.2f)", blPower, brPower);
-            telemetry.addData("Servo + Feeder Power", "%.2f", gamepad1.right_trigger);
+            telemetry.addData("Intake Group Power (L/R Servo, Feeder Motor/Servo)", "%.2f", intakePower);
             telemetry.update();
         }
     }
