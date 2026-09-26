@@ -134,6 +134,10 @@ public class SkongAutonomous extends LinearOpMode {
             if (feederServo != null) {
                 feederServo.setPower(1.0);
             }
+            // Flywheel (shooter) spins continuously at half power for the entire OpMode.
+            if (shooter != null) {
+                shooter.setPower(0.5);
+            }
 
             // Run for 10 seconds or until STOP is pressed
             ElapsedTime timer = new ElapsedTime();
@@ -150,9 +154,9 @@ public class SkongAutonomous extends LinearOpMode {
                 if (feederServo != null) {
                     feederServo.setPower(1.0);
                 }
-                // Shooter stays off while moving to save battery and focus
+                // Flywheel remains spinning continuously at half power
                 if (shooter != null) {
-                    shooter.setPower(0.0);
+                    shooter.setPower(0.5);
                 }
 
                 // Show what the software thinks is happening
@@ -211,12 +215,10 @@ public class SkongAutonomous extends LinearOpMode {
                         stopRobot();
                         telemetry.addData("AprilTag Status", "Tag Detected! Stopped.");
                         
-                        // Spin up the shooter motor for competition action
+                        // Flywheel is already spinning continuously at half power
                         if (shooter != null) {
-                            shooter.setPower(1.0);
-                            telemetry.addData("Shooter Status", "Spinning up!");
+                            telemetry.addData("Shooter Status", "Already spinning at half power");
                             telemetry.update();
-                            sleep(3000); // Give it 3 seconds to spin at full speed
                         }
                         
                         // Break out of the loop completely once a tag is found to prevent it from starting again
