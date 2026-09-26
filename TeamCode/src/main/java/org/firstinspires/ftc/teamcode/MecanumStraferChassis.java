@@ -43,7 +43,7 @@ public class MecanumStraferChassis extends LinearOpMode {
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         shooter.setDirection(DcMotor.Direction.FORWARD);
         feederServo.setDirection(CRServo.Direction.REVERSE);
-        feederMotor.setDirection(DcMotor.Direction.REVERSE);
+        feederMotor.setDirection(DcMotor.Direction.FORWARD);
         leftServo.setDirection(CRServo.Direction.FORWARD);
         rightServo.setDirection(CRServo.Direction.REVERSE);
 

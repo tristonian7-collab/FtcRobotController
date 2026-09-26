@@ -81,7 +81,7 @@ public class CoachDemoAutonomous extends LinearOpMode {
         shooter.setDirection(DcMotor.Direction.FORWARD);
 
         if (feederMotor != null) {
-            feederMotor.setDirection(DcMotor.Direction.REVERSE);
+            feederMotor.setDirection(DcMotor.Direction.FORWARD);
         }
         if (feederServo != null) {
             feederServo.setDirection(CRServo.Direction.REVERSE);

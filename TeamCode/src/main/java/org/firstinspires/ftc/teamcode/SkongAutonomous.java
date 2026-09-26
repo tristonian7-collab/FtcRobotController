@@ -97,7 +97,7 @@ public class SkongAutonomous extends LinearOpMode {
             feederServo.setDirection(CRServo.Direction.REVERSE);
         }
         if (feederMotor != null) {
-            feederMotor.setDirection(DcMotor.Direction.REVERSE);
+            feederMotor.setDirection(DcMotor.Direction.FORWARD);
         }
         shooter.setDirection(DcMotor.Direction.FORWARD);
         leftServo.setDirection(CRServo.Direction.FORWARD);
