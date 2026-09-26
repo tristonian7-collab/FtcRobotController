@@ -41,7 +41,7 @@ public class AprilTagAutonomous extends LinearOpMode {
     final double MAX_AUTO_SPEED = 0.5;
     final double MAX_AUTO_TURN  = 0.3;
 
-    final double SHOOTER_POWER = 0.8;
+    final double SHOOTER_POWER = 0.9;
     final double FEEDER_FIRE_POS = 0.5;
     final double FEEDER_IDLE_POS = 0.0;
 

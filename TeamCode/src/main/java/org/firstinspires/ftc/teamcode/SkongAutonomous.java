@@ -136,7 +136,7 @@ public class SkongAutonomous extends LinearOpMode {
             }
             // Flywheel (shooter) spins continuously at half power for the entire OpMode.
             if (shooter != null) {
-                shooter.setPower(0.5);
+                shooter.setPower(0.6);
             }
 
             // Run for 10 seconds or until STOP is pressed
@@ -156,7 +156,7 @@ public class SkongAutonomous extends LinearOpMode {
                 }
                 // Flywheel remains spinning continuously at half power
                 if (shooter != null) {
-                    shooter.setPower(0.5);
+                    shooter.setPower(0.6);
                 }
 
                 // Show what the software thinks is happening
