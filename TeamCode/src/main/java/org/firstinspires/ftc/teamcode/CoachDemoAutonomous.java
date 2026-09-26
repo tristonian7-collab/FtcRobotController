@@ -2,8 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.vision.VisionPortal;
@@ -28,15 +26,8 @@ public class CoachDemoAutonomous extends LinearOpMode {
     public static final double SHOOTER_SPINUP_SECONDS = 1.5;
     // ----------------------------
 
-    private DcMotor frontLeftDrive = null;
-    private DcMotor frontRightDrive = null;
-    private DcMotor backLeftDrive = null;
-    private DcMotor backRightDrive = null;
-    private DcMotor shooter = null;
-    private DcMotor feederMotor = null;
-    private CRServo feederServo = null;
-    private CRServo leftServo = null;
-    private CRServo rightServo = null;
+    // Centralized hardware map shared across all OpModes
+    private final RobotHardware robot = new RobotHardware();
 
     private final ElapsedTime runtime = new ElapsedTime();
 
@@ -47,57 +38,8 @@ public class CoachDemoAutonomous extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-        // Initialize hardware
-        frontLeftDrive = hardwareMap.get(DcMotor.class, "frontLeftDrive");
-        frontRightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
-        backLeftDrive = hardwareMap.get(DcMotor.class, "backLeftDrive");
-        backRightDrive = hardwareMap.get(DcMotor.class, "backRightDrive");
-        shooter = hardwareMap.get(DcMotor.class, "shooterMotor");
-
-        try {
-            feederMotor = hardwareMap.get(DcMotor.class, "feederMotor");
-        } catch (Exception e) {
-            telemetry.addData("Warning", "feeder motor 'feederMotor' not found");
-        }
-
-        try {
-            feederServo = hardwareMap.get(CRServo.class, "feederServo");
-        } catch (Exception e) {
-            telemetry.addData("Warning", "feeder servo 'feederServo' not found");
-        }
-
-        try {
-            leftServo = hardwareMap.get(CRServo.class, "leftServo");
-            rightServo = hardwareMap.get(CRServo.class, "rightServo");
-        } catch (Exception e) {
-            telemetry.addData("Warning", "Intake servos 'leftServo'/'rightServo' not found");
-        }
-
-        // Set directions (Matching MecanumStraferChassis configuration)
-        frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        backRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        shooter.setDirection(DcMotor.Direction.FORWARD);
-
-        if (feederMotor != null) {
-            feederMotor.setDirection(DcMotor.Direction.FORWARD);
-        }
-        if (feederServo != null) {
-            feederServo.setDirection(CRServo.Direction.REVERSE);
-        }
-        if (leftServo != null) {
-            leftServo.setDirection(CRServo.Direction.FORWARD);
-        }
-        if (rightServo != null) {
-            rightServo.setDirection(CRServo.Direction.REVERSE);
-        }
-
-        // Set zero power behavior to BRAKE
-        frontLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        frontRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        backLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        backRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        // Initialize all hardware devices using the shared hardware map
+        robot.init(hardwareMap);
 
         // Initialize Vision
         try {
@@ -144,15 +86,15 @@ public class CoachDemoAutonomous extends LinearOpMode {
             // Phase 2: Spin up the shooter first (feeder still off) so the ball
             // launches instead of just rolling on the shooter wheel.
             if (opModeIsActive()) {
-                shooter.setPower(0.4);
+                robot.setShooterPower(0.4);
                 telemetry.addData("Status", "Spinning up shooter...");
-                telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
+                telemetry.addData("Shooter Power", "%.2f", robot.shooter.getPower());
                 telemetry.update();
 
                 ElapsedTime spinupTimer = new ElapsedTime();
                 while (opModeIsActive() && spinupTimer.seconds() < SHOOTER_SPINUP_SECONDS) {
                     telemetry.addData("Status", "Spinning up shooter...");
-                    telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
+                    telemetry.addData("Shooter Power", "%.2f", robot.shooter.getPower());
                     telemetry.update();
                     idle();
                 }
@@ -161,23 +103,12 @@ public class CoachDemoAutonomous extends LinearOpMode {
             // Phase 3: Shooter is up to speed, now continuously run the intake
             // group forever. leftServo, rightServo, feederMotor, and feederServo
             // must always run together.
-            if (feederMotor != null) {
-                feederMotor.setPower(1.0);
-            }
-            if (feederServo != null) {
-                feederServo.setPower(1.0);
-            }
-            if (leftServo != null) {
-                leftServo.setPower(1.0);
-            }
-            if (rightServo != null) {
-                rightServo.setPower(1.0);
-            }
+            robot.setIntakePower(1.0);
 
             while (opModeIsActive()) {
-                shooter.setPower(0.4);
+                robot.setShooterPower(0.4);
                 telemetry.addData("Status", "Shooter at speed. Feeding continuously...");
-                telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
+                telemetry.addData("Shooter Power", "%.2f", robot.shooter.getPower());
                 telemetry.update();
                 idle();
             }
@@ -206,16 +137,10 @@ public class CoachDemoAutonomous extends LinearOpMode {
     }
 
     private void moveForward(double power) {
-        frontLeftDrive.setPower(power);
-        frontRightDrive.setPower(power);
-        backLeftDrive.setPower(power);
-        backRightDrive.setPower(power);
+        robot.driveMecanum(power, 0, 0);
     }
 
     private void stopRobot() {
-        frontLeftDrive.setPower(0);
-        frontRightDrive.setPower(0);
-        backLeftDrive.setPower(0);
-        backRightDrive.setPower(0);
+        robot.stopDrive();
     }
 }

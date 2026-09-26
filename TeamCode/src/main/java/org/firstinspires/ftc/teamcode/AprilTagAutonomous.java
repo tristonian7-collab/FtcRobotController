@@ -2,14 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.IMU;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -23,12 +16,9 @@ import java.util.List;
 @Autonomous(name="AprilTag Auto Firing", group="Robot")
 public class AprilTagAutonomous extends LinearOpMode {
 
-    /* Hardware members */
-    private DcMotor leftDrive   = null;
-    private DcMotor rightDrive  = null;
-    private DcMotor shooter     = null;
-    private Servo   feeder      = null;
-    private IMU     imu         = null;
+    // Centralized hardware map shared across all OpModes (4-motor Mecanum drivetrain,
+    // shooter, and intake group: leftServo/rightServo/feederMotor/feederServo)
+    private final RobotHardware robot = new RobotHardware();
 
     /* Vision members */
     private VisionPortal visionPortal;
@@ -42,31 +32,13 @@ public class AprilTagAutonomous extends LinearOpMode {
     final double MAX_AUTO_TURN  = 0.3;
 
     final double SHOOTER_POWER = 0.4;
-    final double FEEDER_FIRE_POS = 0.5;
-    final double FEEDER_IDLE_POS = 0.0;
 
     @Override
     public void runOpMode() {
-        // Initialize Hardware
+        // Initialize all hardware devices (drivetrain, shooter, intake group, IMU)
+        // using the shared hardware map
         try {
-            leftDrive  = hardwareMap.get(DcMotor.class, "left_drive");
-            rightDrive = hardwareMap.get(DcMotor.class, "right_drive");
-            shooter    = hardwareMap.get(DcMotor.class, "shooter");
-            feeder     = hardwareMap.get(Servo.class, "feederServo");
-
-            leftDrive.setDirection(DcMotor.Direction.REVERSE);
-            rightDrive.setDirection(DcMotor.Direction.FORWARD);
-            shooter.setDirection(DcMotor.Direction.FORWARD);
-
-            feeder.setPosition(FEEDER_IDLE_POS);
-
-            // Initialize IMU
-            imu = hardwareMap.get(IMU.class, "imu");
-            RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.UP;
-            RevHubOrientationOnRobot.UsbFacingDirection  usbDirection  = RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
-            RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
-            imu.initialize(new IMU.Parameters(orientationOnRobot));
-
+            robot.init(hardwareMap);
         } catch (Exception e) {
             telemetry.addData("Error", "Hardware not found. Check configuration.");
             telemetry.update();
@@ -87,10 +59,10 @@ public class AprilTagAutonomous extends LinearOpMode {
         while (!isStarted() && !isStopRequested()) {
             telemetry.addData("Status", "Initialized. Ready for Start.");
             telemetry.addData("Y Controller Angle (Stick)", gamepad1.left_stick_y);
-            
-            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+
+            YawPitchRollAngles orientation = robot.imu.getRobotYawPitchRollAngles();
             telemetry.addData("Y Controller Angle (Pitch)", orientation.getPitch(AngleUnit.DEGREES));
-            
+
             telemetry.update();
             sleep(10);
         }
@@ -111,7 +83,7 @@ public class AprilTagAutonomous extends LinearOpMode {
                 // Check if aligned and at distance (with a small tolerance)
                 if (Math.abs(rangeError) < 1.0 && Math.abs(headingError) < 2.0) {
                     // Stop and Fire
-                    moveRobot(0, 0);
+                    robot.driveMecanum(0, 0, 0);
                     fireShooter();
                     break; // End autonomous after firing
                 } else {
@@ -119,9 +91,9 @@ public class AprilTagAutonomous extends LinearOpMode {
                     // We want to drive forward/back and rotate to face the tag
                     double drive = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
                     double turn  = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN);
-                    
+
                     telemetry.addData("Auto", "Drive %5.2f, Turn %5.2f", drive, turn);
-                    moveRobot(drive, turn);
+                    robot.driveMecanum(drive, 0, turn);
                 }
 
                 if (targetTag instanceof AprilTagSingleDetection) {
@@ -136,17 +108,17 @@ public class AprilTagAutonomous extends LinearOpMode {
                 // No tag found
                 if (getRuntime() - lastFoundTime > 2.0) {
                     // Scan by rotating slowly
-                    moveRobot(0, 0.2);
+                    robot.driveMecanum(0, 0, 0.2);
                     telemetry.addData("Status", "Scanning...");
                 } else {
-                    moveRobot(0, 0);
+                    robot.driveMecanum(0, 0, 0);
                     telemetry.addData("Status", "Searching for Tag...");
                 }
             }
             telemetry.addData("Y Controller Angle (Stick)", gamepad1.left_stick_y);
-            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+            YawPitchRollAngles orientation = robot.imu.getRobotYawPitchRollAngles();
             telemetry.addData("Y Controller Angle (Pitch)", orientation.getPitch(AngleUnit.DEGREES));
-            telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
+            telemetry.addData("Shooter Power", "%.2f", robot.shooter.getPower());
             telemetry.update();
             sleep(10);
         }
@@ -180,33 +152,21 @@ public class AprilTagAutonomous extends LinearOpMode {
         return null;
     }
 
-    private void moveRobot(double x, double yaw) {
-        double leftPower  = x - yaw;
-        double rightPower = x + yaw;
-
-        double max = Math.max(Math.abs(leftPower), Math.abs(rightPower));
-        if (max > 1.0) {
-            leftPower /= max;
-            rightPower /= max;
-        }
-
-        leftDrive.setPower(leftPower);
-        rightDrive.setPower(rightPower);
-    }
-
     private void fireShooter() {
         telemetry.addData("Action", "Firing!!!");
         telemetry.update();
 
-        shooter.setPower(SHOOTER_POWER);
-        telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
+        robot.setShooterPower(SHOOTER_POWER);
+        telemetry.addData("Shooter Power", "%.2f", robot.shooter.getPower());
         telemetry.update();
         sleep(2000); // Wait for shooter to spin up
 
-        feeder.setPosition(FEEDER_FIRE_POS);
+        // Feed the ball into the shooter using the shared intake group
+        // (leftServo, rightServo, feederMotor, feederServo)
+        robot.setIntakePower(1.0);
         sleep(1000); // Wait for feed
+        robot.setIntakePower(0.0);
 
-        feeder.setPosition(FEEDER_IDLE_POS);
-        shooter.setPower(0);
+        robot.setShooterPower(0);
     }
 }

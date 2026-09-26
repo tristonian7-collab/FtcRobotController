@@ -1,51 +1,21 @@
 package org.firstinspires.ftc.teamcode;
 
-// Essential FTC SDK Imports for a Driving Chassis
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.CRServo;
 
 @TeleOp(name = "MecanumStraferChassis", group = "Drive")
 public class MecanumStraferChassis extends LinearOpMode {
 
-    // Motor declarations for the 4-motor Mecanum chassis
-    private DcMotor frontLeftDrive  = null;
-    private DcMotor frontRightDrive = null;
-    private DcMotor backLeftDrive   = null;
-    private DcMotor backRightDrive  = null;
-    private CRServo feederServo     = null;
-    private DcMotor feederMotor     = null;
-    private DcMotor shooter         = null;
-    private CRServo leftServo       = null;
-    private CRServo rightServo      = null;
+    // Centralized hardware map shared across all OpModes
+    private final RobotHardware robot = new RobotHardware();
 
     // Speed multiplier (1.0 = 100% full speed capacity)
     private double maxDrivePower = 1.0;
 
     @Override
     public void runOpMode() {
-        // Initialize hardware map (Ensure these names match your REV Hub configuration)
-        frontLeftDrive  = hardwareMap.get(DcMotor.class, "frontLeftDrive");
-        frontRightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
-        backLeftDrive   = hardwareMap.get(DcMotor.class, "backLeftDrive");
-        backRightDrive  = hardwareMap.get(DcMotor.class, "backRightDrive");
-        shooter         = hardwareMap.get(DcMotor.class, "shooterMotor");
-        feederServo     = hardwareMap.get(CRServo.class, "feederServo");
-        feederMotor     = hardwareMap.get(DcMotor.class, "feederMotor");
-        leftServo       = hardwareMap.get(CRServo.class, "leftServo");
-        rightServo      = hardwareMap.get(CRServo.class, "rightServo");
-
-        // Reverse left side motors so positive power moves the robot forward
-        frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        backRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        shooter.setDirection(DcMotor.Direction.FORWARD);
-        feederServo.setDirection(CRServo.Direction.REVERSE);
-        feederMotor.setDirection(DcMotor.Direction.FORWARD);
-        leftServo.setDirection(CRServo.Direction.FORWARD);
-        rightServo.setDirection(CRServo.Direction.REVERSE);
+        // Initialize all hardware devices using the shared hardware map
+        robot.init(hardwareMap);
 
         telemetry.addData("Status", "Chassis Initialized. Ready to drive!");
         telemetry.update();
@@ -67,44 +37,22 @@ public class MecanumStraferChassis extends LinearOpMode {
             strafe  = strafe * maxDrivePower;
             turn    = turn * maxDrivePower;
 
-            // 3. Mecanum Kinematics Power Distribution Formula
-            double flPower = forward + turn + strafe;
-            double frPower = forward - turn - strafe;
-            double blPower = forward + turn - strafe;
-            double brPower = forward - turn + strafe;
-
-            // 4. Normalize powers if any calculated variable exceeds maximum limits (1.0 or -1.0)
-            double max = Math.max(Math.abs(flPower), Math.max(Math.abs(frPower),
-                    Math.max(Math.abs(blPower), Math.abs(brPower))));
-            if (max > 1.0) {
-                flPower /= max;
-                frPower /= max;
-                blPower /= max;
-                brPower /= max;
-            }
-
-            // 5. Deliver proportional voltage straight to the REV Hub motor ports
-            frontLeftDrive.setPower(flPower);
-            frontRightDrive.setPower(frPower);
-            backLeftDrive.setPower(blPower);
-            backRightDrive.setPower(brPower);
+            // 3-5. Mecanum Kinematics Power Distribution, normalization, and motor output
+            robot.driveMecanum(forward, strafe, turn);
 
             // 6. Control Intake Group (leftServo, rightServo, feederMotor, feederServo) together with R2 Trigger
             double intakePower = gamepad1.right_trigger;
-            leftServo.setPower(intakePower);
-            rightServo.setPower(intakePower);
-            feederMotor.setPower(intakePower);
-            feederServo.setPower(intakePower);
+            robot.setIntakePower(intakePower);
 
-            // 7. Flywheel (shooter) always spins at a fixed half power; L2 trigger no longer controls it
-            shooter.setPower(0.4);
+            // 7. Flywheel (shooter) always spins at a fixed power; L2 trigger no longer controls it
+            robot.setShooterPower(0.4);
 
             // 8. Monitor outputs live via driver station telemetry text feeds
             telemetry.addData("Joystick Inputs", "Y: (%.2f), X: (%.2f), Turn: (%.2f)", forward, strafe, turn);
-            telemetry.addData("Motor Target Powers", "FL: (%.2f) | FR: (%.2f)", flPower, frPower);
-            telemetry.addData("Motor Target Powers", "BL: (%.2f) | BR: (%.2f)", blPower, brPower);
+            telemetry.addData("Motor Target Powers", "FL: (%.2f) | FR: (%.2f)", robot.frontLeftDrive.getPower(), robot.frontRightDrive.getPower());
+            telemetry.addData("Motor Target Powers", "BL: (%.2f) | BR: (%.2f)", robot.backLeftDrive.getPower(), robot.backRightDrive.getPower());
             telemetry.addData("Intake Group Power (L/R Servo, Feeder Motor/Servo)", "%.2f", intakePower);
-            telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
+            telemetry.addData("Shooter Power", "%.2f", robot.shooter.getPower());
             telemetry.update();
         }
     }

@@ -2,9 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -48,15 +45,8 @@ public class SkongAutonomous extends LinearOpMode {
     public static final double TURN_GAIN = 0.02;        // Proportional gain for steering
     // ----------------------------
 
-    private DcMotor frontLeftDrive = null;
-    private DcMotor frontRightDrive = null;
-    private DcMotor backLeftDrive = null;
-    private DcMotor backRightDrive = null;
-    private CRServo feederServo    = null;
-    private DcMotor feederMotor    = null;
-    private DcMotor shooter        = null;
-    private CRServo leftServo = null;
-    private CRServo rightServo = null;
+    // Centralized hardware map shared across all OpModes
+    private final RobotHardware robot = new RobotHardware();
 
     private final ElapsedTime runtime = new ElapsedTime();
 
@@ -67,49 +57,8 @@ public class SkongAutonomous extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-        // Initialize hardware
-        frontLeftDrive = hardwareMap.get(DcMotor.class, "frontLeftDrive");
-        frontRightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
-        backLeftDrive = hardwareMap.get(DcMotor.class, "backLeftDrive");
-        backRightDrive = hardwareMap.get(DcMotor.class, "backRightDrive");
-        shooter = hardwareMap.get(DcMotor.class, "shooterMotor");
-        leftServo = hardwareMap.get(CRServo.class, "leftServo");
-        rightServo = hardwareMap.get(CRServo.class, "rightServo");
-
-        try {
-            feederServo = hardwareMap.get(CRServo.class, "feederServo");
-        } catch (Exception e) {
-            telemetry.addData("Warning", "feeder servo 'feederServo' not found");
-        }
-
-        try {
-            feederMotor = hardwareMap.get(DcMotor.class, "feederMotor");
-        } catch (Exception e) {
-            telemetry.addData("Warning", "feeder motor 'feederMotor' not found");
-        }
-
-        // Set directions
-        frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        backRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        if (feederServo != null) {
-            feederServo.setDirection(CRServo.Direction.REVERSE);
-        }
-        if (feederMotor != null) {
-            feederMotor.setDirection(DcMotor.Direction.FORWARD);
-        }
-        shooter.setDirection(DcMotor.Direction.FORWARD);
-        leftServo.setDirection(CRServo.Direction.FORWARD);
-        rightServo.setDirection(CRServo.Direction.REVERSE);
-
-
-
-        // Set zero power behavior to BRAKE
-        frontLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        frontRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        backLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        backRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        // Initialize all hardware devices using the shared hardware map
+        robot.init(hardwareMap);
 
         // Initialize Vision (try-catch since camera may not be mounted/configured yet)
         try {
@@ -128,63 +77,47 @@ public class SkongAutonomous extends LinearOpMode {
         if (opModeIsActive()) {
             // Spin the intake group (leftServo, rightServo, feederMotor, feederServo)
             // continuously for the entire OpMode. These must always run together.
-            if (feederMotor != null) {
-                feederMotor.setPower(1.0);
+            if (robot.feederMotor != null) {
+                robot.feederMotor.setPower(1.0);
             }
-            if (feederServo != null) {
-                feederServo.setPower(1.0);
+            if (robot.feederServo != null) {
+                robot.feederServo.setPower(1.0);
             }
             // Flywheel (shooter) spins continuously at half power for the entire OpMode.
-            if (shooter != null) {
-                shooter.setPower(0.4);
-            }
+            robot.setShooterPower(0.4);
 
             // Run for 10 seconds or until STOP is pressed
             ElapsedTime timer = new ElapsedTime();
             timer.reset();
-            
+
             while (opModeIsActive() && timer.seconds() < 10) {
                 // Intake group: leftServo, rightServo, feederMotor, feederServo always together
-                leftServo.setPower(1.0);
-                rightServo.setPower(1.0);
-
-                if (feederMotor != null) {
-                    feederMotor.setPower(1.0);
-                }
-                if (feederServo != null) {
-                    feederServo.setPower(1.0);
-                }
+                robot.setIntakePower(1.0);
                 // Flywheel remains spinning continuously at half power
-                if (shooter != null) {
-                    shooter.setPower(0.4);
-                }
+                robot.setShooterPower(0.4);
 
                 // Show what the software thinks is happening
                 telemetry.addData("Status", "feeder Running");
                 telemetry.addData("Timer", "%.1f / 10.0s", timer.seconds());
-                telemetry.addData("Servo L", "Power: %.2f", leftServo.getPower());
-                telemetry.addData("Servo R", "Power: %.2f", rightServo.getPower());
-                if (feederServo != null) {
-                    telemetry.addData("feeder Servo", "Power: %.2f", feederServo.getPower());
+                telemetry.addData("Servo L", "Power: %.2f", robot.leftServo.getPower());
+                telemetry.addData("Servo R", "Power: %.2f", robot.rightServo.getPower());
+                if (robot.feederServo != null) {
+                    telemetry.addData("feeder Servo", "Power: %.2f", robot.feederServo.getPower());
                 } else {
                     telemetry.addData("feeder Servo", "NOT FOUND");
                 }
-                if (feederMotor != null) {
-                    telemetry.addData("feeder Motor", "Power: %.2f", feederMotor.getPower());
+                if (robot.feederMotor != null) {
+                    telemetry.addData("feeder Motor", "Power: %.2f", robot.feederMotor.getPower());
                 } else {
                     telemetry.addData("feeder Motor", "NOT FOUND");
                 }
-                if (shooter != null) {
-                    telemetry.addData("shooter Motor", "Power: %.2f", shooter.getPower());
-                } else {
-                    telemetry.addData("shooter Motor", "NOT FOUND");
-                }
+                telemetry.addData("shooter Motor", "Power: %.2f", robot.shooter.getPower());
 
                 // AprilTag detection and distance reporting
                 if (aprilTag != null) {
                     // Diagnostic: Check camera and processor state
                     telemetry.addData("Camera State", visionPortal.getCameraState());
-                    
+
                     List<AprilTagDetection> currentDetections = aprilTag.getDetections();
                     telemetry.addData("Raw Detections Count", currentDetections.size());
                     boolean tagFound = false;
@@ -207,22 +140,20 @@ public class SkongAutonomous extends LinearOpMode {
                         } else {
                             telemetry.addData("Distance (Range)", "Tracking pose... (Hold Still)");
                         }
-                        break; 
+                        break;
                     }
 
                     if (tagFound) {
                         // Tag found! Immediately halt all robot wheel movement.
                         stopRobot();
                         telemetry.addData("AprilTag Status", "Tag Detected! Stopped.");
-                        
+
                         // Flywheel is already spinning continuously at half power
-                        if (shooter != null) {
-                            telemetry.addData("Shooter Status", "Already spinning at half power");
-                            telemetry.update();
-                        }
-                        
+                        telemetry.addData("Shooter Status", "Already spinning at half power");
+                        telemetry.update();
+
                         // Break out of the loop completely once a tag is found to prevent it from starting again
-                        break; 
+                        break;
                     } else {
                         // No tag in sight yet, continue moving forward at a safe testing speed
                         telemetry.addData("AprilTag Status", "No tags visible - Moving Forward...");
@@ -233,24 +164,15 @@ public class SkongAutonomous extends LinearOpMode {
                 }
 
                 telemetry.update();
-                
+
                 idle();
             }
 
             // Stop everything. Intake group (leftServo, rightServo, feederMotor,
             // feederServo) always stops together since they must run in sync.
             stopRobot();
-            leftServo.setPower(0.0);
-            rightServo.setPower(0.0);
-            if (feederMotor != null) {
-                feederMotor.setPower(0.0);
-            }
-            if (feederServo != null) {
-                feederServo.setPower(0.0);
-            }
-            if (shooter != null) {
-                shooter.setPower(0.0);
-            }
+            robot.setIntakePower(0.0);
+            robot.setShooterPower(0.0);
 
             telemetry.addData("Status", "Stopped");
             telemetry.update();
@@ -306,19 +228,19 @@ public class SkongAutonomous extends LinearOpMode {
         double leftPower = (power - steer) * LEFT_P_SCALE;
         double rightPower = (power + steer) * RIGHT_P_SCALE;
 
-        frontLeftDrive.setPower(Range.clip(leftPower, -1.0, 1.0));
-        frontRightDrive.setPower(Range.clip(rightPower, -1.0, 1.0));
-        backLeftDrive.setPower(Range.clip(leftPower, -1.0, 1.0));
-        backRightDrive.setPower(Range.clip(rightPower, -1.0, 1.0));
+        robot.frontLeftDrive.setPower(Range.clip(leftPower, -1.0, 1.0));
+        robot.frontRightDrive.setPower(Range.clip(rightPower, -1.0, 1.0));
+        robot.backLeftDrive.setPower(Range.clip(leftPower, -1.0, 1.0));
+        robot.backRightDrive.setPower(Range.clip(rightPower, -1.0, 1.0));
     }
 
     private void turnLeft(double degrees) {
         // Use perfected data: TURN_SPEED (0.33) and TURN_SECONDS (1.0 for 90 deg)
-        frontLeftDrive.setPower(-TURN_SPEED);
-        frontRightDrive.setPower(TURN_SPEED);
-        backLeftDrive.setPower(-TURN_SPEED);
-        backRightDrive.setPower(TURN_SPEED);
-        
+        robot.frontLeftDrive.setPower(-TURN_SPEED);
+        robot.frontRightDrive.setPower(TURN_SPEED);
+        robot.backLeftDrive.setPower(-TURN_SPEED);
+        robot.backRightDrive.setPower(TURN_SPEED);
+
         sleep((long)((degrees / 90.0) * TURN_SECONDS * 1000));
         stopRobot();
         sleep(200);
@@ -326,10 +248,10 @@ public class SkongAutonomous extends LinearOpMode {
 
     private void turnRight(double degrees) {
         // Use perfected data: TURN_SPEED (0.33) and TURN_SECONDS (1.0 for 90 deg)
-        frontLeftDrive.setPower(TURN_SPEED);
-        frontRightDrive.setPower(-TURN_SPEED);
-        backLeftDrive.setPower(TURN_SPEED);
-        backRightDrive.setPower(-TURN_SPEED);
+        robot.frontLeftDrive.setPower(TURN_SPEED);
+        robot.frontRightDrive.setPower(-TURN_SPEED);
+        robot.backLeftDrive.setPower(TURN_SPEED);
+        robot.backRightDrive.setPower(-TURN_SPEED);
 
         sleep((long)((degrees / 90.0) * TURN_SECONDS * 1000));
         stopRobot();
@@ -337,10 +259,7 @@ public class SkongAutonomous extends LinearOpMode {
     }
 
     private void stopRobot() {
-        frontLeftDrive.setPower(0);
-        frontRightDrive.setPower(0);
-        backLeftDrive.setPower(0);
-        backRightDrive.setPower(0);
+        robot.stopDrive();
     }
 
     private void initAprilTag() {
