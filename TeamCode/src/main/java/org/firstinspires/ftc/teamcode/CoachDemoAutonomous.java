@@ -144,7 +144,7 @@ public class CoachDemoAutonomous extends LinearOpMode {
             // Phase 2: Spin up the shooter first (feeder still off) so the ball
             // launches instead of just rolling on the shooter wheel.
             if (opModeIsActive()) {
-                shooter.setPower(1.0);
+                shooter.setPower(0.4);
                 telemetry.addData("Status", "Spinning up shooter...");
                 telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
                 telemetry.update();
@@ -175,7 +175,7 @@ public class CoachDemoAutonomous extends LinearOpMode {
             }
 
             while (opModeIsActive()) {
-                shooter.setPower(1.0);
+                shooter.setPower(0.4);
                 telemetry.addData("Status", "Shooter at speed. Feeding continuously...");
                 telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
                 telemetry.update();
