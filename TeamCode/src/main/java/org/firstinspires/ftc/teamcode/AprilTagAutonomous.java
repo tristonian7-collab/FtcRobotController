@@ -146,6 +146,7 @@ public class AprilTagAutonomous extends LinearOpMode {
             telemetry.addData("Y Controller Angle (Stick)", gamepad1.left_stick_y);
             YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
             telemetry.addData("Y Controller Angle (Pitch)", orientation.getPitch(AngleUnit.DEGREES));
+            telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
             telemetry.update();
             sleep(10);
         }
@@ -198,6 +199,8 @@ public class AprilTagAutonomous extends LinearOpMode {
         telemetry.update();
 
         shooter.setPower(SHOOTER_POWER);
+        telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
+        telemetry.update();
         sleep(2000); // Wait for shooter to spin up
 
         feeder.setPosition(FEEDER_FIRE_POS);

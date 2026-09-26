@@ -104,6 +104,7 @@ public class MecanumStraferChassis extends LinearOpMode {
             telemetry.addData("Motor Target Powers", "FL: (%.2f) | FR: (%.2f)", flPower, frPower);
             telemetry.addData("Motor Target Powers", "BL: (%.2f) | BR: (%.2f)", blPower, brPower);
             telemetry.addData("Intake Group Power (L/R Servo, Feeder Motor/Servo)", "%.2f", intakePower);
+            telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
             telemetry.update();
         }
     }

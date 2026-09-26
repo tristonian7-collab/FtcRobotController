@@ -146,10 +146,14 @@ public class CoachDemoAutonomous extends LinearOpMode {
             if (opModeIsActive()) {
                 shooter.setPower(1.0);
                 telemetry.addData("Status", "Spinning up shooter...");
+                telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
                 telemetry.update();
 
                 ElapsedTime spinupTimer = new ElapsedTime();
                 while (opModeIsActive() && spinupTimer.seconds() < SHOOTER_SPINUP_SECONDS) {
+                    telemetry.addData("Status", "Spinning up shooter...");
+                    telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
+                    telemetry.update();
                     idle();
                 }
             }
@@ -173,6 +177,7 @@ public class CoachDemoAutonomous extends LinearOpMode {
             while (opModeIsActive()) {
                 shooter.setPower(1.0);
                 telemetry.addData("Status", "Shooter at speed. Feeding continuously...");
+                telemetry.addData("Shooter Power", "%.2f", shooter.getPower());
                 telemetry.update();
                 idle();
             }
