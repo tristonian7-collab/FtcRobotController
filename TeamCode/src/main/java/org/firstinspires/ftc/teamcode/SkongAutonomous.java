@@ -75,6 +75,11 @@ public class SkongAutonomous extends LinearOpMode {
         runtime.reset();
 
         if (opModeIsActive()) {
+            // Drive forward for half a second before we start shooting.
+            setPowerWithSteer(DRIVE_SPEED, 0.0);
+            sleep(500);
+            stopRobot();
+
             // Spin the intake group (leftServo, rightServo, feederMotor, feederServo)
             // continuously for the entire OpMode. These must always run together.
             if (robot.feederMotor != null) {
