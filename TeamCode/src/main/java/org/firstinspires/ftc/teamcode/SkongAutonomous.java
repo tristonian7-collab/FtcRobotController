@@ -83,8 +83,8 @@ public class SkongAutonomous extends LinearOpMode {
             if (robot.feederServo != null) {
                 robot.feederServo.setPower(1.0);
             }
-            // Flywheel (shooter) spins continuously at half power for the entire OpMode.
-            robot.setShooterPower(0.4);
+            // Flywheel (shooter) spins continuously at 0.7 power for the entire OpMode.
+            robot.setShooterPower(0.7);
 
             // Run for 10 seconds or until STOP is pressed
             ElapsedTime timer = new ElapsedTime();
@@ -93,8 +93,8 @@ public class SkongAutonomous extends LinearOpMode {
             while (opModeIsActive() && timer.seconds() < 10) {
                 // Intake group: leftServo, rightServo, feederMotor, feederServo always together
                 robot.setIntakePower(1.0);
-                // Flywheel remains spinning continuously at half power
-                robot.setShooterPower(0.4);
+                // Flywheel remains spinning continuously at 0.7 power
+                robot.setShooterPower(0.7);
 
                 // Show what the software thinks is happening
                 telemetry.addData("Status", "feeder Running");
@@ -148,8 +148,8 @@ public class SkongAutonomous extends LinearOpMode {
                         stopRobot();
                         telemetry.addData("AprilTag Status", "Tag Detected! Stopped.");
 
-                        // Flywheel is already spinning continuously at half power
-                        telemetry.addData("Shooter Status", "Already spinning at half power");
+                        // Flywheel is already spinning continuously at 0.7 power
+                        telemetry.addData("Shooter Status", "Already spinning at 0.7 power");
                         telemetry.update();
 
                         // Break out of the loop completely once a tag is found to prevent it from starting again
@@ -168,13 +168,14 @@ public class SkongAutonomous extends LinearOpMode {
                 idle();
             }
 
-            // Stop everything. Intake group (leftServo, rightServo, feederMotor,
-            // feederServo) always stops together since they must run in sync.
+            // Stop the drive train and intake group (leftServo, rightServo, feederMotor,
+            // feederServo always stop together since they must run in sync). The
+            // shooter is NOT stopped here - it must keep spinning for the whole OpMode.
             stopRobot();
             robot.setIntakePower(0.0);
-            robot.setShooterPower(0.0);
+            // Shooter intentionally left running so the robot is always shooting.
 
-            telemetry.addData("Status", "Stopped");
+            telemetry.addData("Status", "Stopped (Shooter still spinning)");
             telemetry.update();
             sleep(1000);
         }
