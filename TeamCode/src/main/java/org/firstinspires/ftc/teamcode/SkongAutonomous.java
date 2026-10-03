@@ -75,8 +75,8 @@ public class SkongAutonomous extends LinearOpMode {
         runtime.reset();
 
         if (opModeIsActive()) {
-            // Drive forward for half a second before we start shooting.
-            setPowerWithSteer(DRIVE_SPEED, 0.0);
+            // Drive backward for half a second before we start shooting.
+            setPowerWithSteer(-DRIVE_SPEED, 0.0);
             sleep(500);
             stopRobot();
 
