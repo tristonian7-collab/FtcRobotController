@@ -141,6 +141,9 @@ public class RobotHardware {
         if (feederMotor != null) {
             feederMotor.setPower(power);
         }
+    }
+
+    public void setFeederServo(double power) {
         if (feederServo != null) {
             feederServo.setPower(power);
         }
