@@ -44,6 +44,9 @@ public class MecanumStraferChassis extends LinearOpMode {
             double intakePower = gamepad1.right_trigger;
             robot.setIntakePower(intakePower);
 
+            double feederServoPower = gamepad1.left_trigger;
+            robot.setFeederServo(feederServoPower);
+
             // 7. Flywheel (shooter) always spins at a fixed power; L2 trigger no longer controls it
             robot.setShooterPower(0.5);
 
