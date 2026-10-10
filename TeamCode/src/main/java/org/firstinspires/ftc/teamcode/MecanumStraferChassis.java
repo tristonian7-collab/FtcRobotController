@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
@@ -19,6 +20,21 @@ public class MecanumStraferChassis extends LinearOpMode {
     // Speed multiplier (1.0 = 100% full speed capacity)
     private double maxDrivePower = 1.0;
 
+    // --- Status Light INIT color cycle (purely cosmetic/diagnostic; run-time colors below are untouched) ---
+    // Sweeps across the servo's full range (plus the named RED/GREEN constants) so the light visibly
+    // cycles while waiting at INIT, confirming it's wired/mapped correctly before PLAY is pressed.
+    private static final double[] INIT_CYCLE_POSITIONS = {
+            0.0,
+            0.2,
+            RobotHardware.STATUS_LIGHT_RED,
+            0.4,
+            0.6,
+            RobotHardware.STATUS_LIGHT_GREEN,
+            0.8,
+            1.0,
+    };
+    private static final double INIT_CYCLE_SECONDS_PER_COLOR = 0.5;
+
     // --- Vision Members ---
     private VisionPortal visionPortal = null;
     private AprilTagProcessor aprilTag = null;
@@ -27,7 +43,6 @@ public class MecanumStraferChassis extends LinearOpMode {
     public void runOpMode() {
         // Initialize all hardware devices using the shared hardware map
         robot.init(hardwareMap);
-        robot.setStatusLightWhite(); // Default status light to white
 
         // Initialize Vision (try-catch since camera may not be mounted/configured yet)
         try {
@@ -36,11 +51,25 @@ public class MecanumStraferChassis extends LinearOpMode {
             telemetry.addData("Vision Error", "Webcam 1 not found or failed to initialize.");
         }
 
-        telemetry.addData("Status", "Chassis Initialized. Ready to drive!");
-        telemetry.update();
+        // Cycle the status light through a spread of colors while waiting at INIT so it's
+        // obvious the light is wired/mapped correctly before PLAY is pressed. Run-time status
+        // light behavior (red/green based on AprilTag detection) is untouched below.
+        ElapsedTime initColorTimer = new ElapsedTime();
+        int initColorIndex = 0;
+        while (!isStarted() && !isStopRequested()) {
+            if (initColorTimer.seconds() >= INIT_CYCLE_SECONDS_PER_COLOR) {
+                initColorIndex = (initColorIndex + 1) % INIT_CYCLE_POSITIONS.length;
+                initColorTimer.reset();
+            }
+            robot.setStatusLightColor(INIT_CYCLE_POSITIONS[initColorIndex]);
+
+            telemetry.addData("Status", "Chassis Initialized. Cycling status light. Ready to drive!");
+            telemetry.update();
+        }
 
         // Wait for the driver to press PLAY on the Driver Station app
         waitForStart();
+        robot.setStatusLightWhite(); // Default status light to white once run-time logic takes over
 
         // Main driver loop
         while (opModeIsActive()) {
