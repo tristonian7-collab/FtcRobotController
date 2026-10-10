@@ -12,13 +12,13 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagSingleDetection;
 import java.util.List;
 
 /**
- * Autonomous OpMode named "skongautonomous".
+ * Autonomous OpMode named "horseauto".
  * Logic:
  * 1. Spin feeder for 10 seconds.
  * 2. Wheels are currently disabled for testing.
  */
-@Autonomous(name = "skongautonomous", group = "StarterBot")
-public class SkongAutonomous extends LinearOpMode {
+@Autonomous(name = "horseauto", group = "StarterBot")
+public class HorseAuto extends LinearOpMode {
 
     // --- Adjustable Constants ---
     public static final double DRIVE_SPEED = 0.5;
@@ -74,7 +74,7 @@ public class SkongAutonomous extends LinearOpMode {
             telemetry.addData("Vision Error", "Webcam 1 not found or failed to initialize.");
         }
 
-        telemetry.addData("Status", "Initialized. Name: skongautonomous");
+        telemetry.addData("Status", "Initialized. Name: horseauto");
         telemetry.update();
 
         // Wait for the game to start (driver presses PLAY)
