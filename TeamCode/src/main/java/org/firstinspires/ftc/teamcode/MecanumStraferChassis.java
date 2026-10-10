@@ -27,7 +27,7 @@ public class MecanumStraferChassis extends LinearOpMode {
     public void runOpMode() {
         // Initialize all hardware devices using the shared hardware map
         robot.init(hardwareMap);
-        robot.setStatusLightRed(); // Default status light to bright red
+        robot.setStatusLightWhite(); // Default status light to white
 
         // Initialize Vision (try-catch since camera may not be mounted/configured yet)
         try {
@@ -105,13 +105,13 @@ public class MecanumStraferChassis extends LinearOpMode {
                 telemetry.addData("AprilTag Status", "Camera/Processor not initialized");
             }
 
-            // Update status light: bright red when no tag detected, green when tag detected
+            // Update status light: white when no tag detected, green when tag detected
             if (tagFound) {
                 robot.setStatusLightGreen();
                 telemetry.addData("Status Light", "GREEN (Tag Detected)");
             } else {
-                robot.setStatusLightRed();
-                telemetry.addData("Status Light", "RED (No Tag)");
+                robot.setStatusLightWhite();
+                telemetry.addData("Status Light", "WHITE (No Tag)");
             }
 
             telemetry.update();
