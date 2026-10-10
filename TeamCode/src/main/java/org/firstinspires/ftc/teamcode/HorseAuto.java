@@ -90,9 +90,9 @@ public class HorseAuto extends LinearOpMode {
             // Flywheel (shooter) spins continuously at SHOOTER_POWER for the entire OpMode.
             // Spin it up first and wait 3 seconds before firing so it has time to reach speed.
             robot.setShooterPower(SHOOTER_POWER);
-            telemetry.addData("Status", "Spinning up shooter - waiting 3.0s before firing");
+            telemetry.addData("Status", "Spinning up shooter - waiting 4.0s before firing");
             telemetry.update();
-            sleep(3000);
+            sleep(4000);
 
             // Spin the intake group (leftServo, rightServo, feederMotor, feederServo)
             // continuously for the entire OpMode. These must always run together.
