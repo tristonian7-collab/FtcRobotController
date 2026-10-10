@@ -75,6 +75,11 @@ public class SkongAutonomous extends LinearOpMode {
         runtime.reset();
 
         if (opModeIsActive()) {
+            // Drive backward for half a second before we start shooting.
+            setPowerWithSteer(-DRIVE_SPEED, 0.0);
+            sleep(500);
+            stopRobot();
+
             // Spin the intake group (leftServo, rightServo, feederMotor, feederServo)
             // continuously for the entire OpMode. These must always run together.
             if (robot.feederMotor != null) {
@@ -83,8 +88,8 @@ public class SkongAutonomous extends LinearOpMode {
             if (robot.feederServo != null) {
                 robot.feederServo.setPower(1.0);
             }
-            // Flywheel (shooter) spins continuously at 0.7 power for the entire OpMode.
-            robot.setShooterPower(0.7);
+            // Flywheel (shooter) spins continuously at 0.5 power for the entire OpMode.
+            robot.setShooterPower(0.5);
 
             // Run for 10 seconds or until STOP is pressed
             ElapsedTime timer = new ElapsedTime();
@@ -93,8 +98,8 @@ public class SkongAutonomous extends LinearOpMode {
             while (opModeIsActive() && timer.seconds() < 10) {
                 // Intake group: leftServo, rightServo, feederMotor, feederServo always together
                 robot.setIntakePower(1.0);
-                // Flywheel remains spinning continuously at 0.7 power
-                robot.setShooterPower(0.7);
+                // Flywheel remains spinning continuously at 0.5 power
+                robot.setShooterPower(0.5);
 
                 // Show what the software thinks is happening
                 telemetry.addData("Status", "feeder Running");
@@ -148,16 +153,16 @@ public class SkongAutonomous extends LinearOpMode {
                         stopRobot();
                         telemetry.addData("AprilTag Status", "Tag Detected! Stopped.");
 
-                        // Flywheel is already spinning continuously at 0.7 power
-                        telemetry.addData("Shooter Status", "Already spinning at 0.7 power");
+                        // Flywheel is already spinning continuously at 0.5 power
+                        telemetry.addData("Shooter Status", "Already spinning at 0.5 power");
                         telemetry.update();
 
                         // Break out of the loop completely once a tag is found to prevent it from starting again
                         break;
                     } else {
-                        // No tag in sight yet, continue moving forward at a safe testing speed
-                        telemetry.addData("AprilTag Status", "No tags visible - Moving Forward...");
-                        setPowerWithSteer(0.25, 0.0);
+                        // Driving is disabled during the shoot loop - robot stays put and just shoots.
+                        telemetry.addData("AprilTag Status", "No tags visible - Drive disabled (stationary)");
+                        stopRobot();
                     }
                 } else {
                     telemetry.addData("AprilTag Status", "Camera/Processor not initialized (not mounted or configured yet)");
