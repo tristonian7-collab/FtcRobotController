@@ -80,6 +80,13 @@ public class SkongAutonomous extends LinearOpMode {
             sleep(500);
             stopRobot();
 
+            // Flywheel (shooter) spins continuously at 0.5 power for the entire OpMode.
+            // Spin it up first and wait 3 seconds before firing so it has time to reach speed.
+            robot.setShooterPower(0.5);
+            telemetry.addData("Status", "Spinning up shooter - waiting 3.0s before firing");
+            telemetry.update();
+            sleep(3000);
+
             // Spin the intake group (leftServo, rightServo, feederMotor, feederServo)
             // continuously for the entire OpMode. These must always run together.
             if (robot.feederMotor != null) {
@@ -88,8 +95,6 @@ public class SkongAutonomous extends LinearOpMode {
             if (robot.feederServo != null) {
                 robot.feederServo.setPower(1.0);
             }
-            // Flywheel (shooter) spins continuously at 0.5 power for the entire OpMode.
-            robot.setShooterPower(0.5);
 
             // Run for 10 seconds or until STOP is pressed
             ElapsedTime timer = new ElapsedTime();
