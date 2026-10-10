@@ -69,7 +69,7 @@ public class MecanumStraferChassis extends LinearOpMode {
 
         // Wait for the driver to press PLAY on the Driver Station app
         waitForStart();
-        robot.setStatusLightRed(); // Default status light to bright red once run-time logic takes over
+        robot.setStatusLightWhite(); // Default status light to white once run-time logic takes over
 
         // Main driver loop
         while (opModeIsActive()) {
@@ -134,13 +134,13 @@ public class MecanumStraferChassis extends LinearOpMode {
                 telemetry.addData("AprilTag Status", "Camera/Processor not initialized");
             }
 
-            // Update status light: bright red when no tag detected, green when tag detected
+            // Update status light: white when no tag detected, green when tag detected
             if (tagFound) {
                 robot.setStatusLightGreen();
                 telemetry.addData("Status Light", "GREEN (Tag Detected)");
             } else {
-                robot.setStatusLightRed();
-                telemetry.addData("Status Light", "RED (No Tag)");
+                robot.setStatusLightWhite();
+                telemetry.addData("Status Light", "WHITE (No Tag)");
             }
 
             telemetry.update();
