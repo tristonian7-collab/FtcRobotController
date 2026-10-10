@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.Servo;
 
 /**
  * Centralizes hardware device mapping, naming, and initialization for the robot so that
@@ -34,15 +35,16 @@ public class RobotHardware {
     public CRServo leftServo   = null;
     public CRServo rightServo  = null;
 
-    // --- Sensors ---
+    // --- Status Light / Sensors ---
+    public Servo statusLight = null;
     public IMU imu = null;
 
     /**
      * Initializes all hardware devices using the standard REV Hub configuration names.
      * frontLeftDrive/frontRightDrive/backLeftDrive/backRightDrive/shooter/leftServo/rightServo
      * are required and will throw if missing from the configuration. feederMotor, feederServo,
-     * and imu are optional (left null if not found/configured) so calling code should null-check
-     * them before use.
+     * statusLight, and imu are optional (left null if not found/configured) so calling code
+     * should null-check them before use.
      */
     public void init(HardwareMap hardwareMap) {
         // Required devices
@@ -55,6 +57,12 @@ public class RobotHardware {
         rightServo      = hardwareMap.get(CRServo.class, "rightServo");
 
         // Optional devices
+        try {
+            statusLight = hardwareMap.get(Servo.class, "statusLight");
+        } catch (Exception e) {
+            statusLight = null;
+        }
+
         try {
             feederServo = hardwareMap.get(CRServo.class, "feederServo");
         } catch (Exception e) {
@@ -152,5 +160,26 @@ public class RobotHardware {
     /** Sets the flywheel (shooter) power. */
     public void setShooterPower(double power) {
         shooter.setPower(power);
+    }
+
+    // --- Status Light (goBilda SKU: 3118-0808-0002 on Servo Port 1, "statusLight") ---
+    // Full Range Servo config PWM pulse width positions:
+    // 0.279 = Bright Red
+    // 0.722 = Green
+    public static final double STATUS_LIGHT_RED   = 0.279;
+    public static final double STATUS_LIGHT_GREEN = 0.722;
+
+    public void setStatusLightColor(double position) {
+        if (statusLight != null) {
+            statusLight.setPosition(position);
+        }
+    }
+
+    public void setStatusLightRed() {
+        setStatusLightColor(STATUS_LIGHT_RED);
+    }
+
+    public void setStatusLightGreen() {
+        setStatusLightColor(STATUS_LIGHT_GREEN);
     }
 }

@@ -27,6 +27,7 @@ public class MecanumStraferChassis extends LinearOpMode {
     public void runOpMode() {
         // Initialize all hardware devices using the shared hardware map
         robot.init(hardwareMap);
+        robot.setStatusLightRed(); // Default status light to bright red
 
         // Initialize Vision (try-catch since camera may not be mounted/configured yet)
         try {
@@ -75,13 +76,15 @@ public class MecanumStraferChassis extends LinearOpMode {
             telemetry.addData("Intake Group Power (L/R Servo, Feeder Motor/Servo)", "%.2f", intakePower);
             telemetry.addData("Shooter Power", "%.2f", robot.shooter.getPower());
 
-            // AprilTag detection and distance reporting
+            // AprilTag detection, distance reporting, and status light feedback
+            boolean tagFound = false;
             if (aprilTag != null) {
                 telemetry.addData("Camera State", visionPortal.getCameraState());
 
                 List<AprilTagDetection> currentDetections = aprilTag.getDetections();
                 telemetry.addData("Raw Detections Count", currentDetections.size());
                 for (AprilTagDetection detection : currentDetections) {
+                    tagFound = true;
                     if (detection instanceof AprilTagSingleDetection) {
                         AprilTagSingleDetection singleDet = (AprilTagSingleDetection) detection;
                         String name = (singleDet.metadata != null) ? singleDet.metadata.name : "Unmapped Tag ID";
@@ -100,6 +103,15 @@ public class MecanumStraferChassis extends LinearOpMode {
                 }
             } else {
                 telemetry.addData("AprilTag Status", "Camera/Processor not initialized");
+            }
+
+            // Update status light: bright red when no tag detected, green when tag detected
+            if (tagFound) {
+                robot.setStatusLightGreen();
+                telemetry.addData("Status Light", "GREEN (Tag Detected)");
+            } else {
+                robot.setStatusLightRed();
+                telemetry.addData("Status Light", "RED (No Tag)");
             }
 
             telemetry.update();
