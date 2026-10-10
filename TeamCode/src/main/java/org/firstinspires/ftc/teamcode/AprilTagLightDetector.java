@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
@@ -19,6 +20,10 @@ public class AprilTagLightDetector extends LinearOpMode {
     // --- Vision Members ---
     private VisionPortal visionPortal = null;
     private AprilTagProcessor aprilTag = null;
+
+    // --- Light PWM Control Members ---
+    private double lightPwm = RobotHardware.STATUS_LIGHT_WHITE;
+    private boolean manualOverride = false;
 
     @Override
     public void runOpMode() {
@@ -39,7 +44,7 @@ public class AprilTagLightDetector extends LinearOpMode {
         // Wait for the driver to press PLAY on the Driver Station app
         waitForStart();
 
-        // Main detection loop
+        // Main detection and light control loop
         while (opModeIsActive()) {
 
             // AprilTag detection, distance reporting, and status light feedback
@@ -74,13 +79,38 @@ public class AprilTagLightDetector extends LinearOpMode {
                 telemetry.addData("AprilTag Status", "Camera/Processor not initialized");
             }
 
-            // Update status light: white when no tag detected, green when tag detected
-            if (tagFound) {
-                robot.setStatusLightGreen();
-                telemetry.addData("Status Light", "GREEN (Tag Detected)");
+            // --- Gamepad1 Right Joystick Light Control ---
+            // Invert gamepad1.right_stick_y so pushing UP increases the PWM signal position
+            double stickInput = -gamepad1.right_stick_y;
+            if (Math.abs(stickInput) > 0.05) {
+                manualOverride = true;
+                lightPwm += stickInput * 0.003; // Adjust PWM signal position smoothly
+                lightPwm = Range.clip(lightPwm, 0.0, 1.0);
+            }
+
+            // Pressing 'A' button on gamepad1 resets back to automatic AprilTag light mode
+            if (gamepad1.a) {
+                manualOverride = false;
+            }
+
+            // Determine light color / PWM signal based on manual override or AprilTag detection
+            if (!manualOverride) {
+                if (tagFound) {
+                    lightPwm = RobotHardware.STATUS_LIGHT_GREEN;
+                } else {
+                    lightPwm = RobotHardware.STATUS_LIGHT_WHITE;
+                }
+            }
+
+            // Send PWM signal to the status light servo port
+            robot.setStatusLightColor(lightPwm);
+
+            // Output Light PWM telemetry and status
+            telemetry.addData("Light PWM Signal", "%.3f", lightPwm);
+            if (manualOverride) {
+                telemetry.addData("Status Light", "MANUAL (Right Stick Y: %.2f | Press 'A' to reset)", gamepad1.right_stick_y);
             } else {
-                robot.setStatusLightWhite();
-                telemetry.addData("Status Light", "WHITE (No Tag)");
+                telemetry.addData("Status Light", tagFound ? "GREEN (Tag Detected)" : "WHITE (No Tag)");
             }
 
             telemetry.update();
