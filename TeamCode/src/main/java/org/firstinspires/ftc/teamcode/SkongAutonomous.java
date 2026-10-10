@@ -24,6 +24,13 @@ public class SkongAutonomous extends LinearOpMode {
     public static final double DRIVE_SPEED = 0.5;
     public static final double CM_PER_SECOND = 71.33; // 214cm / 3.0s
 
+    // Flywheel (shooter) power level
+    public static final double SHOOTER_POWER = 0.7;
+
+    // Initial backward move before shooting (and the matching forward move when
+    // parking back to start). Increased 20% vs. the original 500ms move.
+    public static final long INITIAL_MOVE_TIME_MS = 600; // 500ms * 1.2
+
     public static final double TURN_SPEED = 0.33;
     public static final double TURN_SECONDS = 1.0;
 
@@ -75,14 +82,14 @@ public class SkongAutonomous extends LinearOpMode {
         runtime.reset();
 
         if (opModeIsActive()) {
-            // Drive backward for half a second before we start shooting.
+            // Drive backward before we start shooting (20% further than before).
             setPowerWithSteer(-DRIVE_SPEED, 0.0);
-            sleep(500);
+            sleep(INITIAL_MOVE_TIME_MS);
             stopRobot();
 
-            // Flywheel (shooter) spins continuously at 0.5 power for the entire OpMode.
+            // Flywheel (shooter) spins continuously at SHOOTER_POWER for the entire OpMode.
             // Spin it up first and wait 3 seconds before firing so it has time to reach speed.
-            robot.setShooterPower(0.5);
+            robot.setShooterPower(SHOOTER_POWER);
             telemetry.addData("Status", "Spinning up shooter - waiting 3.0s before firing");
             telemetry.update();
             sleep(3000);
@@ -103,8 +110,8 @@ public class SkongAutonomous extends LinearOpMode {
             while (opModeIsActive() && timer.seconds() < 10) {
                 // Intake group: leftServo, rightServo, feederMotor, feederServo always together
                 robot.setIntakePower(1.0);
-                // Flywheel remains spinning continuously at 0.5 power
-                robot.setShooterPower(0.5);
+                // Flywheel remains spinning continuously at SHOOTER_POWER
+                robot.setShooterPower(SHOOTER_POWER);
 
                 // Show what the software thinks is happening
                 telemetry.addData("Status", "feeder Running");
@@ -158,8 +165,8 @@ public class SkongAutonomous extends LinearOpMode {
                         stopRobot();
                         telemetry.addData("AprilTag Status", "Tag Detected! Stopped.");
 
-                        // Flywheel is already spinning continuously at 0.5 power
-                        telemetry.addData("Shooter Status", "Already spinning at 0.5 power");
+                        // Flywheel is already spinning continuously at SHOOTER_POWER
+                        telemetry.addData("Shooter Status", "Already spinning at %.2f power", SHOOTER_POWER);
                         telemetry.update();
 
                         // Break out of the loop completely once a tag is found to prevent it from starting again
@@ -179,15 +186,31 @@ public class SkongAutonomous extends LinearOpMode {
             }
 
             // Stop the drive train and intake group (leftServo, rightServo, feederMotor,
-            // feederServo always stop together since they must run in sync). The
-            // shooter is NOT stopped here - it must keep spinning for the whole OpMode.
+            // feederServo always stop together since they must run in sync).
             stopRobot();
             robot.setIntakePower(0.0);
-            // Shooter intentionally left running so the robot is always shooting.
 
-            telemetry.addData("Status", "Stopped (Shooter still spinning)");
+            // Shooting is done - power down the flywheel before parking.
+            robot.setShooterPower(0.0);
+
+            telemetry.addData("Status", "Stopped - shooting complete");
             telemetry.update();
-            sleep(1000);
+            sleep(500);
+
+            // Park back into the original starting position. The only translation
+            // made before/while shooting was the initial backward move at DRIVE_SPEED
+            // (with no steer) for INITIAL_MOVE_TIME_MS, so driving forward for the same
+            // duration/power undoes it and returns the robot to its start point.
+            telemetry.addData("Status", "Parking - returning to start position");
+            telemetry.update();
+
+            setPowerWithSteer(DRIVE_SPEED, 0.0);
+            sleep(INITIAL_MOVE_TIME_MS);
+            stopRobot();
+
+            telemetry.addData("Status", "Parked at starting position");
+            telemetry.update();
+            sleep(500);
         }
 
         // Clean up vision portal resource when OpMode is done
