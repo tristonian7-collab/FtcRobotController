@@ -25,7 +25,7 @@ public class SkongAutonomous extends LinearOpMode {
     public static final double CM_PER_SECOND = 71.33; // 214cm / 3.0s
 
     // Flywheel (shooter) power level
-    public static final double SHOOTER_POWER = 0.7;
+    public static final double SHOOTER_POWER = 0.8;
 
     // Initial backward move before shooting (and the matching forward move when
     // parking back to start). Increased 20% vs. the original 500ms move.

@@ -98,7 +98,7 @@ public class AprilTagLightDetector extends LinearOpMode {
                 if (tagFound) {
                     lightPwm = RobotHardware.STATUS_LIGHT_GREEN;
                 } else {
-                    lightPwm = RobotHardware.STATUS_LIGHT_WHITE;
+                    lightPwm = RobotHardware.STATUS_LIGHT_RED;
                 }
             }
 

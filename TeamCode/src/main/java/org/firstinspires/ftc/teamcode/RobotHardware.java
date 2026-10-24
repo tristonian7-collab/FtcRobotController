@@ -164,12 +164,12 @@ public class RobotHardware {
 
     // --- Status Light (goBilda SKU: 3118-0808-0002 on Servo Port 1, "statusLight") ---
     // Full Range Servo config PWM pulse width positions:
-    // 0.611 = Solid White
-    // 0.722 = Green
-    // 0.279 = Red
-    public static final double STATUS_LIGHT_WHITE = 0.611;
-    public static final double STATUS_LIGHT_GREEN = 0.722;
-    public static final double STATUS_LIGHT_RED   = 0.279;
+    // 0.999 = Solid White
+    // 0.500 = Green
+    // 0.278 = Red
+    public static final double STATUS_LIGHT_WHITE = 0.999;
+    public static final double STATUS_LIGHT_GREEN = 0.500;
+    public static final double STATUS_LIGHT_RED   = 0.278;
 
     public void setStatusLightColor(double position) {
         if (statusLight != null) {

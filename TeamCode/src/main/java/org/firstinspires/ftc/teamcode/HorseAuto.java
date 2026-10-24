@@ -12,12 +12,12 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagSingleDetection;
 import java.util.List;
 
 /**
- * Autonomous OpMode named "horseauto".
+ * Autonomous OpMode named "primaryshooterauto".
  * Logic:
  * 1. Spin feeder for 10 seconds.
  * 2. Wheels are currently disabled for testing.
  */
-@Autonomous(name = "horseauto", group = "StarterBot")
+@Autonomous(name = "primaryshooterauto", group = "StarterBot")
 public class HorseAuto extends LinearOpMode {
 
     // --- Adjustable Constants ---
@@ -74,7 +74,7 @@ public class HorseAuto extends LinearOpMode {
             telemetry.addData("Vision Error", "Webcam 1 not found or failed to initialize.");
         }
 
-        telemetry.addData("Status", "Initialized. Name: horseauto");
+        telemetry.addData("Status", "Initialized. Name: primaryshooterauto");
         telemetry.update();
 
         // Wait for the game to start (driver presses PLAY)
@@ -197,18 +197,28 @@ public class HorseAuto extends LinearOpMode {
             telemetry.update();
             sleep(500);
 
-            // Park back into the original starting position. The only translation
-            // made before/while shooting was the initial backward move at DRIVE_SPEED
-            // (with no steer) for INITIAL_MOVE_TIME_MS, so driving forward for the same
-            // duration/power undoes it and returns the robot to its start point.
-            telemetry.addData("Status", "Parking - returning to start position");
+            // After firing and moving backward, move 110cm to the right, then 200cm backward.
+            telemetry.addData("Status", "Moving 110cm right");
             telemetry.update();
 
-            setPowerWithSteer(DRIVE_SPEED, 0.0);
-            sleep(INITIAL_MOVE_TIME_MS);
+            moveRight(110.0);
+            stopRobot();
+            sleep(250);
+
+            telemetry.addData("Status", "Moving 200cm backward");
+            telemetry.update();
+
+            moveBackward(200.0);
+            stopRobot();
+            sleep(250);
+
+            telemetry.addData("Status", "Moving 50cm right");
+            telemetry.update();
+
+            moveRight(50.0);
             stopRobot();
 
-            telemetry.addData("Status", "Parked at starting position");
+            telemetry.addData("Status", "Final move complete");
             telemetry.update();
             sleep(500);
         }
@@ -236,6 +246,64 @@ public class HorseAuto extends LinearOpMode {
 
         // 3. Ramp down
         stopMoving(DRIVE_SPEED);
+    }
+
+    private void moveBackward(double distanceCm) {
+        double timeSeconds = distanceCm / CM_PER_SECOND;
+
+        telemetry.addData("Path", "Moving %.1f cm backward", distanceCm);
+        telemetry.update();
+
+        // 1. Ramp up
+        startMoving(-DRIVE_SPEED);
+
+        // 2. Constant speed
+        long steadyStateTimeMs = (long) ((timeSeconds * 1000) - RAMP_UP_TIME_MS - RAMP_DOWN_TIME_MS);
+        if (steadyStateTimeMs > 0) {
+            sleep(steadyStateTimeMs);
+        }
+
+        // 3. Ramp down
+        stopMoving(-DRIVE_SPEED);
+    }
+
+    private void moveRight(double distanceCm) {
+        double timeSeconds = distanceCm / CM_PER_SECOND;
+
+        telemetry.addData("Path", "Moving %.1f cm right", distanceCm);
+        telemetry.update();
+
+        // 1. Ramp up (positive strafe = right, per RobotHardware#driveMecanum convention)
+        startStrafing(DRIVE_SPEED);
+
+        // 2. Constant speed
+        long steadyStateTimeMs = (long) ((timeSeconds * 1000) - RAMP_UP_TIME_MS - RAMP_DOWN_TIME_MS);
+        if (steadyStateTimeMs > 0) {
+            sleep(steadyStateTimeMs);
+        }
+
+        // 3. Ramp down
+        stopStrafing(DRIVE_SPEED);
+    }
+
+    private void startStrafing(double targetStrafePower) {
+        ElapsedTime rampTimer = new ElapsedTime();
+        while (opModeIsActive() && rampTimer.milliseconds() < RAMP_UP_TIME_MS) {
+            double ratio = rampTimer.milliseconds() / RAMP_UP_TIME_MS;
+            double currentPower = targetStrafePower * ratio;
+            robot.driveMecanum(0.0, currentPower, 0.0);
+        }
+        robot.driveMecanum(0.0, targetStrafePower, 0.0);
+    }
+
+    private void stopStrafing(double startingPower) {
+        ElapsedTime rampTimer = new ElapsedTime();
+        while (opModeIsActive() && rampTimer.milliseconds() < RAMP_DOWN_TIME_MS) {
+            double ratio = 1.0 - (rampTimer.milliseconds() / RAMP_DOWN_TIME_MS);
+            double currentPower = startingPower * ratio;
+            robot.driveMecanum(0.0, currentPower, 0.0);
+        }
+        stopRobot();
     }
 
     private void startMoving(double targetPower) {

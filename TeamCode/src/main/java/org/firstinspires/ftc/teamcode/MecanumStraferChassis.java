@@ -20,6 +20,9 @@ public class MecanumStraferChassis extends LinearOpMode {
     // Speed multiplier (1.0 = 100% full speed capacity)
     private double maxDrivePower = 1.0;
 
+    // --- Light PWM Control Members ---
+    private double lightPwm = RobotHardware.STATUS_LIGHT_WHITE;
+
     // --- Status Light INIT color cycle (purely cosmetic/diagnostic; run-time colors below are untouched) ---
     // Sweeps across the servo's full range (plus the named RED/GREEN constants) so the light visibly
     // cycles while waiting at INIT, confirming it's wired/mapped correctly before PLAY is pressed.
@@ -96,7 +99,7 @@ public class MecanumStraferChassis extends LinearOpMode {
             robot.setFeederServo(feederServoPower);
 
             // 7. Flywheel (shooter) always spins at a fixed power; L2 trigger no longer controls it
-            robot.setShooterPower(0.5);
+            robot.setShooterPower(0.8);
 
             // 8. Monitor outputs live via driver station telemetry text feeds
             telemetry.addData("Joystick Inputs", "Y: (%.2f), X: (%.2f), Turn: (%.2f)", forward, strafe, turn);
@@ -125,6 +128,9 @@ public class MecanumStraferChassis extends LinearOpMode {
                     if (detection.ftcPose != null) {
                         telemetry.addData("Distance (Range)", "%.2f inches", detection.ftcPose.range);
                         telemetry.addData("Bearing", "%.2f degrees", detection.ftcPose.bearing);
+                        telemetry.addData("Yaw", "%.2f degrees", detection.ftcPose.yaw);
+                        telemetry.addData("Pitch", "%.2f degrees", detection.ftcPose.pitch);
+                        telemetry.addData("Roll", "%.2f degrees", detection.ftcPose.roll);
                     } else {
                         telemetry.addData("Distance (Range)", "Tracking pose... (Hold Still)");
                     }
@@ -134,14 +140,19 @@ public class MecanumStraferChassis extends LinearOpMode {
                 telemetry.addData("AprilTag Status", "Camera/Processor not initialized");
             }
 
-            // Update status light: white when no tag detected, green when tag detected
+            // Determine light color / PWM signal based on AprilTag detection (no manual override)
             if (tagFound) {
-                robot.setStatusLightGreen();
-                telemetry.addData("Status Light", "GREEN (Tag Detected)");
+                lightPwm = RobotHardware.STATUS_LIGHT_GREEN;
             } else {
-                robot.setStatusLightWhite();
-                telemetry.addData("Status Light", "WHITE (No Tag)");
+                lightPwm = RobotHardware.STATUS_LIGHT_RED;
             }
+
+            // Send PWM signal to the status light servo port
+            robot.setStatusLightColor(lightPwm);
+
+            // Output Light PWM telemetry and status
+            telemetry.addData("Light PWM Signal", "%.3f", lightPwm);
+            telemetry.addData("Status Light", tagFound ? "GREEN (Tag Detected)" : "RED (No Tag)");
 
             telemetry.update();
         }
