@@ -119,13 +119,14 @@ public class HorseAuto extends LinearOpMode {
             // and the gate (feederServo) stays closed.
             robot.setShooterPower(SHOOTER_POWER);
 
-            // Move backward 20cm immediately as well, in parallel with the shooter spin-up and
+            // Move backward 5cm immediately as well, in parallel with the shooter spin-up and
             // gate wait below. feederServo stays held at its bottom (closed) position throughout.
-            telemetry.addData("Status", "Spinning up shooter - moving 20cm backward");
+            // (Reduced from the original 20cm by 15cm.)
+            telemetry.addData("Status", "Spinning up shooter - moving 5cm backward");
             telemetry.addData("feeder Servo", "Holding at bottom (closed) position");
             telemetry.update();
 
-            moveBackward(18.5);
+            moveBackward(5.0);
             stopRobot();
 
             // feederServo stays held at its bottom (closed) position until FEEDER_SERVO_BOTTOM_WAIT_MS
