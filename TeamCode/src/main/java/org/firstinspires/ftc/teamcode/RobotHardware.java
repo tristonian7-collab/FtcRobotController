@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.Range;
 
 /**
  * Centralizes hardware device mapping, naming, and initialization for the robot so that
@@ -26,12 +27,13 @@ public class RobotHardware {
 
     // --- Shooter / Intake Group ---
     // feederMotor rolls the ball into the robot (part of the intake group).
-    // feederServo pushes the ball from intake into the shooter.
     // leftServo/rightServo are the intake rollers.
-    // These four (leftServo, rightServo, feederMotor, feederServo) must always run together.
+    // These three (leftServo, rightServo, feederMotor) must always run together.
+    // feederServo is a separate ranged (positional) gate servo that pushes the ball from the
+    // intake into the shooter by moving to an absolute position (not power-driven).
     public DcMotor shooter     = null;
     public DcMotor feederMotor = null;
-    public CRServo feederServo = null;
+    public Servo   feederServo = null;
     public CRServo leftServo   = null;
     public CRServo rightServo  = null;
 
@@ -64,7 +66,7 @@ public class RobotHardware {
         }
 
         try {
-            feederServo = hardwareMap.get(CRServo.class, "feederServo");
+            feederServo = hardwareMap.get(Servo.class, "feederServo");
         } catch (Exception e) {
             feederServo = null;
         }
@@ -93,7 +95,7 @@ public class RobotHardware {
         leftServo.setDirection(CRServo.Direction.FORWARD);
         rightServo.setDirection(CRServo.Direction.REVERSE);
         if (feederServo != null) {
-            feederServo.setDirection(CRServo.Direction.REVERSE);
+            feederServo.setDirection(Servo.Direction.FORWARD);
         }
         if (feederMotor != null) {
             feederMotor.setDirection(DcMotor.Direction.FORWARD);
@@ -140,8 +142,9 @@ public class RobotHardware {
     }
 
     /**
-     * Sets power for the intake group (leftServo, rightServo, feederMotor, feederServo).
-     * These four components must always run together in sync.
+     * Sets power for the intake group (leftServo, rightServo, feederMotor).
+     * These three components must always run together in sync. feederServo is a separate
+     * ranged (positional) gate servo controlled via {@link #setFeederServoPosition(double)}.
      */
     public void setIntakePower(double power) {
         leftServo.setPower(power);
@@ -151,10 +154,26 @@ public class RobotHardware {
         }
     }
 
-    public void setFeederServo(double power) {
+    // feederServo is a ranged (positional) servo spanning FEEDER_SERVO_FULL_RANGE_DEGREES degrees
+    // of physical rotation across its full position range (0.0 = 0 degrees, 1.0 = full range).
+    // TODO: Calibrate this value to the actual servo's physical range of motion.
+    public static final double FEEDER_SERVO_FULL_RANGE_DEGREES = 300.0;
+
+    /** Converts an angle in degrees of feederServo rotation to a position delta (0.0-1.0 scale). */
+    public static double feederServoDegreesToPosition(double degrees) {
+        return degrees / FEEDER_SERVO_FULL_RANGE_DEGREES;
+    }
+
+    /** Sets the feederServo (ranged/positional gate servo) to an absolute position, clamped to [0.0, 1.0]. */
+    public void setFeederServoPosition(double position) {
         if (feederServo != null) {
-            feederServo.setPower(power);
+            feederServo.setPosition(Range.clip(position, 0.0, 1.0));
         }
+    }
+
+    /** Returns the feederServo's last-commanded position, or 0.0 if the servo isn't present. */
+    public double getFeederServoPosition() {
+        return feederServo != null ? feederServo.getPosition() : 0.0;
     }
 
     /** Sets the flywheel (shooter) power. */

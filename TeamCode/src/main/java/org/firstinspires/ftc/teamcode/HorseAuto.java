@@ -25,11 +25,7 @@ public class HorseAuto extends LinearOpMode {
     public static final double CM_PER_SECOND = 71.33; // 214cm / 3.0s
 
     // Flywheel (shooter) power level
-    public static final double SHOOTER_POWER = 0.7;
-
-    // Initial backward move before shooting (and the matching forward move when
-    // parking back to start). Increased 20% vs. the original 500ms move.
-    public static final long INITIAL_MOVE_TIME_MS = 600; // 500ms * 1.2
+    public static final double SHOOTER_POWER = 0.56;
 
     public static final double TURN_SPEED = 0.33;
     public static final double TURN_SECONDS = 1.0;
@@ -50,6 +46,32 @@ public class HorseAuto extends LinearOpMode {
     public static final double DESIRED_DISTANCE = 12.0; // target distance in inches away from tag
     public static final double SPEED_GAIN = 0.03;       // Proportional gain for speed
     public static final double TURN_GAIN = 0.02;        // Proportional gain for steering
+
+    // feederServo is a ranged (positional) servo, so "bottom" is an absolute position
+    // (FEEDER_SERVO_BOTTOM_POSITION) rather than 0 power. After FEEDER_SERVO_BOTTOM_WAIT_MS
+    // elapses, it moves to FEEDER_SERVO_OPEN_POSITION (90 degrees "up" from bottom).
+    // FEEDER_SERVO_DEGREES_PER_SECOND estimates how long a position change takes to physically
+    // complete so we can wait for it before continuing.
+    // TODO: Calibrate FEEDER_SERVO_DEGREES_PER_SECOND to the actual servo's spec (deg/sec at
+    // full speed); keep in sync with the same constant in MecanumStraferChassis.
+    public static final long FEEDER_SERVO_BOTTOM_WAIT_MS = 4000;
+    public static final double FEEDER_SERVO_FULL_RANGE_DEGREES = RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES;
+    public static final double FEEDER_SERVO_ROTATE_DEGREES = 90.0;
+    public static final double FEEDER_SERVO_DEGREES_PER_SECOND = 300.0;
+    public static final double FEEDER_SERVO_BOTTOM_POSITION = 0.0;
+    public static final double FEEDER_SERVO_OPEN_POSITION =
+            FEEDER_SERVO_BOTTOM_POSITION + (FEEDER_SERVO_ROTATE_DEGREES / FEEDER_SERVO_FULL_RANGE_DEGREES);
+    public static final double FEEDER_SERVO_ROTATE_DURATION_SECONDS =
+            FEEDER_SERVO_ROTATE_DEGREES / FEEDER_SERVO_DEGREES_PER_SECOND;
+
+    // Gate (feederServo) end-of-auto motion: after the final movement, the gate moves up
+    // GATE_ROTATE_DEGREES degrees from its open position, then immediately moves back down
+    // the same amount.
+    public static final double GATE_ROTATE_DEGREES = 25.0;
+    public static final double GATE_UP_POSITION =
+            FEEDER_SERVO_OPEN_POSITION + (GATE_ROTATE_DEGREES / FEEDER_SERVO_FULL_RANGE_DEGREES);
+    public static final double GATE_ROTATE_DURATION_SECONDS =
+            GATE_ROTATE_DEGREES / FEEDER_SERVO_DEGREES_PER_SECOND;
     // ----------------------------
 
     // Centralized hardware map shared across all OpModes
@@ -67,6 +89,15 @@ public class HorseAuto extends LinearOpMode {
         // Initialize all hardware devices using the shared hardware map
         robot.init(hardwareMap);
 
+        // Wait FEEDER_SERVO_BOTTOM_WAIT_MS before commanding feederServo at all, so it does not
+        // immediately snap to its "bottom" (closed) position the instant the OpMode is INIT'd.
+        sleep(FEEDER_SERVO_BOTTOM_WAIT_MS);
+
+        // feederServo starts held at its "bottom" (closed) resting position; it will move to
+        // its open position (90 degrees up) later, once FEEDER_SERVO_BOTTOM_WAIT_MS (measured
+        // from waitForStart()) has elapsed in the shooting sequence below.
+        robot.setFeederServoPosition(FEEDER_SERVO_BOTTOM_POSITION);
+
         // Initialize Vision (try-catch since camera may not be mounted/configured yet)
         try {
             initAprilTag();
@@ -82,25 +113,44 @@ public class HorseAuto extends LinearOpMode {
         runtime.reset();
 
         if (opModeIsActive()) {
-            // Drive backward before we start shooting (20% further than before).
-            setPowerWithSteer(-DRIVE_SPEED, 0.0);
-            sleep(INITIAL_MOVE_TIME_MS);
+            // Flywheel (shooter) spins continuously at SHOOTER_POWER for the entire OpMode.
+            // Start it immediately at the start of the OpMode so it has the full
+            // FEEDER_SERVO_BOTTOM_WAIT_MS window to reach speed while the robot moves backward
+            // and the gate (feederServo) stays closed.
+            robot.setShooterPower(SHOOTER_POWER);
+
+            // Move backward 20cm immediately as well, in parallel with the shooter spin-up and
+            // gate wait below. feederServo stays held at its bottom (closed) position throughout.
+            telemetry.addData("Status", "Spinning up shooter - moving 20cm backward");
+            telemetry.addData("feeder Servo", "Holding at bottom (closed) position");
+            telemetry.update();
+
+            moveBackward(20.0);
             stopRobot();
 
-            // Flywheel (shooter) spins continuously at SHOOTER_POWER for the entire OpMode.
-            // Spin it up first and wait 3 seconds before firing so it has time to reach speed.
-            robot.setShooterPower(SHOOTER_POWER);
-            telemetry.addData("Status", "Spinning up shooter - waiting 4.0s before firing");
+            // feederServo stays held at its bottom (closed) position until FEEDER_SERVO_BOTTOM_WAIT_MS
+            // has elapsed since the start of the OpMode (covers the backward move above).
+            long elapsedSinceStartMs = (long) runtime.milliseconds();
+            long remainingBottomWaitMs = FEEDER_SERVO_BOTTOM_WAIT_MS - elapsedSinceStartMs;
+            telemetry.addData("Status", "Waiting for feeder bottom hold to reach 4.0s total");
             telemetry.update();
-            sleep(4000);
+            if (remainingBottomWaitMs > 0) {
+                sleep(remainingBottomWaitMs);
+            }
 
-            // Spin the intake group (leftServo, rightServo, feederMotor, feederServo)
-            // continuously for the entire OpMode. These must always run together.
+            // After the bottom-position wait, move feederServo to its open position (90 degrees up).
+            if (robot.feederServo != null) {
+                telemetry.addData("Status", "Moving feederServo to open position (90 degrees up)");
+                telemetry.update();
+                robot.setFeederServoPosition(FEEDER_SERVO_OPEN_POSITION);
+                sleep((long) (FEEDER_SERVO_ROTATE_DURATION_SECONDS * 1000));
+            }
+
+            // Spin the intake group (leftServo, rightServo, feederMotor) continuously for the
+            // entire OpMode. These must always run together. feederServo is a positional gate
+            // and simply holds at its open position (set above) for the rest of the OpMode.
             if (robot.feederMotor != null) {
                 robot.feederMotor.setPower(1.0);
-            }
-            if (robot.feederServo != null) {
-                robot.feederServo.setPower(1.0);
             }
 
             // Run for 10 seconds or until STOP is pressed
@@ -108,10 +158,13 @@ public class HorseAuto extends LinearOpMode {
             timer.reset();
 
             while (opModeIsActive() && timer.seconds() < 10) {
-                // Intake group: leftServo, rightServo, feederMotor, feederServo always together
+                // Intake group: leftServo, rightServo, feederMotor always together
                 robot.setIntakePower(1.0);
                 // Flywheel remains spinning continuously at SHOOTER_POWER
                 robot.setShooterPower(SHOOTER_POWER);
+
+                // feederServo gate was already moved clockwise to its open position after the
+                // 4-second wait above and simply stays there for the rest of the shoot loop.
 
                 // Show what the software thinks is happening
                 telemetry.addData("Status", "feeder Running");
@@ -119,7 +172,7 @@ public class HorseAuto extends LinearOpMode {
                 telemetry.addData("Servo L", "Power: %.2f", robot.leftServo.getPower());
                 telemetry.addData("Servo R", "Power: %.2f", robot.rightServo.getPower());
                 if (robot.feederServo != null) {
-                    telemetry.addData("feeder Servo", "Power: %.2f", robot.feederServo.getPower());
+                    telemetry.addData("feeder Servo", "Position: %.2f", robot.feederServo.getPosition());
                 } else {
                     telemetry.addData("feeder Servo", "NOT FOUND");
                 }
@@ -185,8 +238,8 @@ public class HorseAuto extends LinearOpMode {
                 idle();
             }
 
-            // Stop the drive train and intake group (leftServo, rightServo, feederMotor,
-            // feederServo always stop together since they must run in sync).
+            // Stop the drive train and intake group (leftServo, rightServo, feederMotor).
+            // feederServo is a positional gate and simply remains at its current position.
             stopRobot();
             robot.setIntakePower(0.0);
 
@@ -197,11 +250,11 @@ public class HorseAuto extends LinearOpMode {
             telemetry.update();
             sleep(500);
 
-            // After firing and moving backward, move 110cm to the right, then 200cm backward.
-            telemetry.addData("Status", "Moving 110cm right");
+            // After firing and moving backward, move 130cm to the right, then 230cm backward.
+            telemetry.addData("Status", "Moving 130cm right");
             telemetry.update();
 
-            moveRight(110.0);
+            moveRight(130.0);
             stopRobot();
             sleep(250);
 
@@ -212,15 +265,29 @@ public class HorseAuto extends LinearOpMode {
             stopRobot();
             sleep(250);
 
-            telemetry.addData("Status", "Moving 50cm right");
+            telemetry.addData("Status", "Moving 115cm right");
             telemetry.update();
 
-            moveRight(50.0);
+            moveRight(115.0);
             stopRobot();
 
             telemetry.addData("Status", "Final move complete");
             telemetry.update();
             sleep(500);
+
+            // After the last movement, move the gate (feederServo) 25 degrees up from its open
+            // position, then immediately move it back down the same amount.
+            if (robot.feederServo != null) {
+                telemetry.addData("Status", "Gate: moving 25 degrees up");
+                telemetry.update();
+                robot.setFeederServoPosition(GATE_UP_POSITION);
+                sleep((long) (GATE_ROTATE_DURATION_SECONDS * 1000));
+
+                telemetry.addData("Status", "Gate: moving back down");
+                telemetry.update();
+                robot.setFeederServoPosition(FEEDER_SERVO_OPEN_POSITION);
+                sleep((long) (GATE_ROTATE_DURATION_SECONDS * 1000));
+            }
         }
 
         // Clean up vision portal resource when OpMode is done
@@ -284,6 +351,25 @@ public class HorseAuto extends LinearOpMode {
 
         // 3. Ramp down
         stopStrafing(DRIVE_SPEED);
+    }
+
+    private void moveLeft(double distanceCm) {
+        double timeSeconds = distanceCm / CM_PER_SECOND;
+
+        telemetry.addData("Path", "Moving %.1f cm left", distanceCm);
+        telemetry.update();
+
+        // 1. Ramp up (negative strafe = left, per RobotHardware#driveMecanum convention)
+        startStrafing(-DRIVE_SPEED);
+
+        // 2. Constant speed
+        long steadyStateTimeMs = (long) ((timeSeconds * 1000) - RAMP_UP_TIME_MS - RAMP_DOWN_TIME_MS);
+        if (steadyStateTimeMs > 0) {
+            sleep(steadyStateTimeMs);
+        }
+
+        // 3. Ramp down
+        stopStrafing(-DRIVE_SPEED);
     }
 
     private void startStrafing(double targetStrafePower) {

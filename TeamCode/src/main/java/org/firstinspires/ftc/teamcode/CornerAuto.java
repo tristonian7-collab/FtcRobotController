@@ -40,11 +40,11 @@ public class CornerAuto extends LinearOpMode {
         runtime.reset();
 
         if (opModeIsActive()) {
-            // Move 60cm to the right
-            telemetry.addData("Status", "Moving 60cm right");
+            // Move 60cm to the left
+            telemetry.addData("Status", "Moving 60cm left");
             telemetry.update();
 
-            moveRight(60.0);
+            moveLeft(60.0);
             stopRobot();
 
             telemetry.addData("Status", "Done");
@@ -53,14 +53,14 @@ public class CornerAuto extends LinearOpMode {
         }
     }
 
-    private void moveRight(double distanceCm) {
+    private void moveLeft(double distanceCm) {
         double timeSeconds = distanceCm / CM_PER_SECOND;
 
-        telemetry.addData("Path", "Moving %.1f cm right", distanceCm);
+        telemetry.addData("Path", "Moving %.1f cm left", distanceCm);
         telemetry.update();
 
-        // 1. Ramp up (positive strafe = right, per RobotHardware#driveMecanum convention)
-        startStrafing(DRIVE_SPEED);
+        // 1. Ramp up (negative strafe = left, per RobotHardware#driveMecanum convention)
+        startStrafing(-DRIVE_SPEED);
 
         // 2. Constant speed
         long steadyStateTimeMs = (long) ((timeSeconds * 1000) - RAMP_UP_TIME_MS - RAMP_DOWN_TIME_MS);
@@ -69,7 +69,7 @@ public class CornerAuto extends LinearOpMode {
         }
 
         // 3. Ramp down
-        stopStrafing(DRIVE_SPEED);
+        stopStrafing(-DRIVE_SPEED);
     }
 
     private void startStrafing(double targetStrafePower) {

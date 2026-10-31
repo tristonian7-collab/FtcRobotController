@@ -49,19 +49,19 @@ public class SecondAuto extends LinearOpMode {
         runtime.reset();
 
         if (opModeIsActive()) {
-            // Move 60cm backward
-            telemetry.addData("Status", "Moving 60cm backward");
+            // Move 60cm forward
+            telemetry.addData("Status", "Moving 60cm forward");
             telemetry.update();
 
-            moveBackward(60.0);
+            moveForward(60.0);
             stopRobot();
             sleep(250);
 
-            // Move 180cm to the left
-            telemetry.addData("Status", "Moving 180cm left");
+            // Move 180cm to the right
+            telemetry.addData("Status", "Moving 180cm right");
             telemetry.update();
 
-            moveLeft(180.0);
+            moveRight(180.0);
             stopRobot();
 
             telemetry.addData("Status", "Done");
@@ -70,14 +70,14 @@ public class SecondAuto extends LinearOpMode {
         }
     }
 
-    private void moveBackward(double distanceCm) {
+    private void moveForward(double distanceCm) {
         double timeSeconds = distanceCm / CM_PER_SECOND;
 
-        telemetry.addData("Path", "Moving %.1f cm backward", distanceCm);
+        telemetry.addData("Path", "Moving %.1f cm", distanceCm);
         telemetry.update();
 
         // 1. Ramp up
-        startMoving(-DRIVE_SPEED);
+        startMoving(DRIVE_SPEED);
 
         // 2. Constant speed
         long steadyStateTimeMs = (long) ((timeSeconds * 1000) - RAMP_UP_TIME_MS - RAMP_DOWN_TIME_MS);
@@ -86,17 +86,17 @@ public class SecondAuto extends LinearOpMode {
         }
 
         // 3. Ramp down
-        stopMoving(-DRIVE_SPEED);
+        stopMoving(DRIVE_SPEED);
     }
 
-    private void moveLeft(double distanceCm) {
+    private void moveRight(double distanceCm) {
         double timeSeconds = distanceCm / CM_PER_SECOND;
 
-        telemetry.addData("Path", "Moving %.1f cm left", distanceCm);
+        telemetry.addData("Path", "Moving %.1f cm right", distanceCm);
         telemetry.update();
 
-        // 1. Ramp up (negative strafe = left, per RobotHardware#driveMecanum convention)
-        startStrafing(-DRIVE_SPEED);
+        // 1. Ramp up (positive strafe = right, per RobotHardware#driveMecanum convention)
+        startStrafing(DRIVE_SPEED);
 
         // 2. Constant speed
         long steadyStateTimeMs = (long) ((timeSeconds * 1000) - RAMP_UP_TIME_MS - RAMP_DOWN_TIME_MS);
@@ -105,7 +105,7 @@ public class SecondAuto extends LinearOpMode {
         }
 
         // 3. Ramp down
-        stopStrafing(-DRIVE_SPEED);
+        stopStrafing(DRIVE_SPEED);
     }
 
     private void startMoving(double targetPower) {
