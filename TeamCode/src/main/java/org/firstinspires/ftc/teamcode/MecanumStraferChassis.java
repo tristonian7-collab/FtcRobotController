@@ -42,9 +42,9 @@ public class MecanumStraferChassis extends LinearOpMode {
     // feederServo is a ranged (positional) servo, so "up"/"down" are absolute positions that are
     // commanded directly; the servo's own hardware handles physically moving there.
     // TODO: Calibrate FEEDER_SERVO_FULL_RANGE_DEGREES (in RobotHardware) to the actual servo's
-    // physical range of motion so the 90-degree position is accurate. If the direction is
+    // physical range of motion so the 120-degree position is accurate. If the direction is
     // backwards on the robot, flip feederServo's direction in RobotHardware#init instead.
-    private static final double FEEDER_SERVO_ROTATE_DEGREES = 90.0;
+    private static final double FEEDER_SERVO_ROTATE_DEGREES = 120.0;
     private static final double FEEDER_SERVO_BOTTOM_POSITION = 0.0;
     private static final double FEEDER_SERVO_UP_POSITION =
             FEEDER_SERVO_BOTTOM_POSITION
