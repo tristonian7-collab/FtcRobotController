@@ -125,7 +125,7 @@ public class HorseAuto extends LinearOpMode {
             telemetry.addData("feeder Servo", "Holding at bottom (closed) position");
             telemetry.update();
 
-            moveBackward(20.0);
+            moveBackward(18.5);
             stopRobot();
 
             // feederServo stays held at its bottom (closed) position until FEEDER_SERVO_BOTTOM_WAIT_MS

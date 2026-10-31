@@ -137,7 +137,7 @@ public class MecanumStraferChassis extends LinearOpMode {
             robot.setFeederServoPosition(feederServoPosition);
 
             // 7. Flywheel (shooter) always spins at a fixed power; L2 trigger no longer controls it
-            robot.setShooterPower(0.55);
+            robot.setShooterPower(0.56);
 
             // 8. Monitor outputs live via driver station telemetry text feeds
             telemetry.addData("Joystick Inputs", "Y: (%.2f), X: (%.2f), Turn: (%.2f)", forward, strafe, turn);
