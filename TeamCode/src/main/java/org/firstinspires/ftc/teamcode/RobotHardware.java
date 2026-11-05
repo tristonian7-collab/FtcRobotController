@@ -32,6 +32,7 @@ public class RobotHardware {
     // feederServo is a separate ranged (positional) gate servo that pushes the ball from the
     // intake into the shooter by moving to an absolute position (not power-driven).
     public DcMotor shooter     = null;
+    public double ticksPerRev;
     public DcMotor feederMotor = null;
     public Servo   feederServo = null;
     public CRServo leftServo   = null;
@@ -106,8 +107,15 @@ public class RobotHardware {
         frontRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        // Motor modes
+        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        ticksPerRev = shooter.getMotorType().getTicksPerRev();
     }
 
+    public double getMotorRevs() {
+        return shooter.getCurrentPosition() / ticksPerRev;
+    }
     /**
      * Drives the 4-motor Mecanum chassis using standard forward/strafe/turn inputs,
      * normalizing power so no wheel exceeds +/-1.0.
