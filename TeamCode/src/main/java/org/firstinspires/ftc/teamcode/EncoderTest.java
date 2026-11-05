@@ -14,7 +14,8 @@ public class EncoderTest extends OpMode {
 
     @Override
     public void loop() {
-        test.setShooterPower(0.5);
+        test.setTargetShooterRPM(25);
+        telemetry.addData("Target RPM", test.getTargetShooterRPM());
         telemetry.addData("Motor Revs", test.getMotorRevs());
         telemetry.addData("Motor RPM", test.getMotorRPM());
     }
