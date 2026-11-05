@@ -34,6 +34,8 @@ public class RobotHardware {
     // intake into the shooter by moving to an absolute position (not power-driven).
     public DcMotor shooter     = null;
     public double ticksPerRev;
+    public double targetShooterPower = 0.0;
+    public double targetShooterRPM   = 0.0;
     public DcMotor feederMotor = null;
     public Servo   feederServo = null;
     public CRServo leftServo   = null;
@@ -198,7 +200,42 @@ public class RobotHardware {
 
     /** Sets the flywheel (shooter) power. */
     public void setShooterPower(double power) {
-        shooter.setPower(power);
+        this.targetShooterPower = power;
+        if (shooter != null) {
+            shooter.setPower(power);
+        }
+    }
+
+    /**
+     * Sets the target flywheel (shooter) power.
+     *
+     * @param targetPower Power level to apply to the shooter motor [-1.0, 1.0]
+     */
+    public void setTargetShooterPower(double targetPower) {
+        setShooterPower(targetPower);
+    }
+
+    /** Returns the target flywheel (shooter) power. */
+    public double getTargetShooterPower() {
+        return targetShooterPower;
+    }
+
+    /**
+     * Sets the target flywheel (shooter) speed in RPM using closed-loop velocity control via DcMotorEx.
+     *
+     * @param targetRPM Desired motor speed in Revolutions Per Minute
+     */
+    public void setTargetShooterRPM(double targetRPM) {
+        this.targetShooterRPM = targetRPM;
+        if (shooter instanceof DcMotorEx && ticksPerRev > 0) {
+            double ticksPerSec = (targetRPM / 60.0) * ticksPerRev;
+            ((DcMotorEx) shooter).setVelocity(ticksPerSec);
+        }
+    }
+
+    /** Returns the target flywheel (shooter) speed in RPM. */
+    public double getTargetShooterRPM() {
+        return targetShooterRPM;
     }
 
     // --- Status Light (goBilda SKU: 3118-0808-0002 on Servo Port 1, "statusLight") ---
