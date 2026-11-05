@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -111,10 +112,21 @@ public class RobotHardware {
         // Motor modes
         shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         ticksPerRev = shooter.getMotorType().getTicksPerRev();
+        if (ticksPerRev <= 0) {
+            // Default fallback for 1:1 bare motor encoders (REV HD Hex 1:1 / GoBILDA 1:1 = 28 ticks/rev)
+            ticksPerRev = 28.0;
+        }
     }
 
     public double getMotorRevs() {
-        return shooter.getCurrentPosition() / ticksPerRev;
+        return ticksPerRev > 0 ? shooter.getCurrentPosition() / ticksPerRev : 0;
+    }
+
+    public double getMotorRPM() {
+        if (shooter instanceof DcMotorEx && ticksPerRev > 0) {
+            return ((DcMotorEx) shooter).getVelocity() / ticksPerRev * 60.0;
+        }
+        return 0;
     }
     /**
      * Drives the 4-motor Mecanum chassis using standard forward/strafe/turn inputs,
