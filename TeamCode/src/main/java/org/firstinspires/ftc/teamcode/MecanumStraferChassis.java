@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
@@ -136,8 +137,11 @@ public class MecanumStraferChassis extends LinearOpMode {
             }
             robot.setFeederServoPosition(feederServoPosition);
 
-            // 7. Flywheel (shooter) always spins at a fixed power; L2 trigger no longer controls it
-            robot.setShooterPower(0.56);
+            // 7. Flywheel (shooter) speed is controlled by Gamepad 2 (second controller)'s right
+            // joystick (right_stick_y). Pushing the stick up increases shooter power; it's clipped
+            // to [0.0, 1.0] so the flywheel never spins in reverse.
+            double shooterPower = Range.clip(-gamepad2.right_stick_y, 0.0, 1.0);
+            robot.setShooterPower(shooterPower);
 
             // 8. Monitor outputs live via driver station telemetry text feeds
             telemetry.addData("Joystick Inputs", "Y: (%.2f), X: (%.2f), Turn: (%.2f)", forward, strafe, turn);
@@ -147,7 +151,7 @@ public class MecanumStraferChassis extends LinearOpMode {
             telemetry.addData("Feeder Servo Position (Commanded)", "%.2f", feederServoPosition);
             telemetry.addData("Feeder Servo Position (Actual)", "%.2f", robot.feederServo != null ? robot.feederServo.getPosition() : -1.0);
             telemetry.addData("Feeder Servo Toggle State", feederServoUp ? "UP" : "DOWN");
-            telemetry.addData("Shooter Power", "%.2f", robot.shooter.getPower());
+            telemetry.addData("Shooter Power (Gamepad 2 Right Stick Y)", "%.2f", robot.shooter.getPower());
 
             // AprilTag detection, distance reporting, and status light feedback
             boolean tagFound = false;

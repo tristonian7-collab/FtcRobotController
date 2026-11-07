@@ -25,7 +25,7 @@ public class HorseAuto extends LinearOpMode {
     public static final double CM_PER_SECOND = 71.33; // 214cm / 3.0s
 
     // Flywheel (shooter) power level
-    public static final double SHOOTER_POWER = 0.56;
+    public static final double SHOOTER_POWER = 0.575;
 
     public static final double TURN_SPEED = 0.33;
     public static final double TURN_SECONDS = 1.0;
@@ -126,7 +126,7 @@ public class HorseAuto extends LinearOpMode {
             telemetry.addData("feeder Servo", "Holding at bottom (closed) position");
             telemetry.update();
 
-            moveBackward(5.0);
+//            moveBackward(2.0);
             stopRobot();
 
             // feederServo stays held at its bottom (closed) position until FEEDER_SERVO_BOTTOM_WAIT_MS
@@ -262,7 +262,7 @@ public class HorseAuto extends LinearOpMode {
             telemetry.addData("Status", "Moving 200cm backward");
             telemetry.update();
 
-            moveBackward(200.0);
+            moveBackward(220.0);
             stopRobot();
             sleep(250);
 
