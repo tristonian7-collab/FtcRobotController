@@ -39,22 +39,30 @@ public class MecanumStraferChassis extends LinearOpMode {
     };
     private static final double INIT_CYCLE_SECONDS_PER_COLOR = 0.5;
 
-    // --- feederServo Button Toggle (Square = toggle up/down, Triangle = force down) ---
-    // feederServo is a ranged (positional) servo, so "up"/"down" are absolute positions that are
-    // commanded directly; the servo's own hardware handles physically moving there.
-    // TODO: Calibrate FEEDER_SERVO_FULL_RANGE_DEGREES (in RobotHardware) to the actual servo's
-    // physical range of motion so the 120-degree position is accurate. If the direction is
-    // backwards on the robot, flip feederServo's direction in RobotHardware#init instead.
+    // --- Gate Servo Momentary Hold Controls (Triangle = feederServo, Square = pollenFeederServo) ---
+    // Both servos are ranged (positional) servos, so "up"/"down" are absolute positions that are
+    // commanded directly every loop based on whether the button is currently held; the servo's
+    // own hardware handles physically moving there. Triangle: held = up, released = down.
+    // pollenFeederServo rests at 120 degrees when square is released, and moves down to 20
+    // degrees for as long as square is held, snapping back to 120 degrees the instant it's
+    // released. There is no toggle/latching behavior and no edge-detection needed.
+    // TODO: Calibrate FEEDER_SERVO_FULL_RANGE_DEGREES / POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES (in
+    // RobotHardware) to each servo's actual physical range of motion so these degree positions
+    // are accurate. If a direction is backwards on the robot, flip that servo's direction in
+    // RobotHardware#init instead.
     private static final double FEEDER_SERVO_ROTATE_DEGREES = 120.0;
     private static final double FEEDER_SERVO_BOTTOM_POSITION = 0.0;
     private static final double FEEDER_SERVO_UP_POSITION =
             FEEDER_SERVO_BOTTOM_POSITION
                     + (FEEDER_SERVO_ROTATE_DEGREES / RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES);
-    private boolean squareWasPressed = false;
-    private boolean triangleWasPressed = false;
-    // Tracks feederServo's logical toggle position: false = bottom/down (resting), true = up
-    // (rotated 90 degrees). Square alternates between the two on each press.
-    private boolean feederServoUp = false;
+
+    // pollenFeederServo: released (resting) = 120 degrees, held (square pressed) = 20 degrees.
+    private static final double POLLEN_FEEDER_SERVO_RESTING_DEGREES = 120.0;
+    private static final double POLLEN_FEEDER_SERVO_PRESSED_DEGREES = 20.0;
+    private static final double POLLEN_FEEDER_SERVO_BOTTOM_POSITION =
+            POLLEN_FEEDER_SERVO_RESTING_DEGREES / RobotHardware.POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES;
+    private static final double POLLEN_FEEDER_SERVO_UP_POSITION =
+            POLLEN_FEEDER_SERVO_PRESSED_DEGREES / RobotHardware.POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES;
 
     // --- Vision Members ---
     private VisionPortal visionPortal = null;
@@ -113,29 +121,32 @@ public class MecanumStraferChassis extends LinearOpMode {
             double intakePower = gamepad1.right_trigger;
             robot.setIntakePower(intakePower);
 
-            // Square toggles feederServo between bottom/down (resting) and a position rotated 90
-            // degrees up: the first press moves it up, the next press returns it back down.
-            // Triangle can still be used to manually force it back down. Edge-detected so holding
-            // a button doesn't repeatedly re-trigger the toggle. The left trigger acts as a manual
-            // override, directly setting the servo's absolute position when pressed.
-            boolean squarePressed = gamepad1.square;
+            // Triangle holds feederServo (gate) up for as long as it's held, and releases it back
+            // down the instant triangle is let go. Square controls pollenFeederServo: it rests at
+            // 120 degrees and moves down to 20 degrees for as long as square is held, snapping
+            // back to 120 degrees the instant square is released. The left trigger still acts as
+            // a manual override for feederServo, directly setting its absolute position when
+            // pressed (takes priority over triangle).
             boolean trianglePressed = gamepad1.triangle;
-            if (squarePressed && !squareWasPressed) {
-                feederServoUp = !feederServoUp;
-            } else if (trianglePressed && !triangleWasPressed) {
-                feederServoUp = false; // force back down
-            }
-            squareWasPressed = squarePressed;
-            triangleWasPressed = trianglePressed;
+            boolean squarePressed = gamepad1.square;
+            telemetry.addData("DEBUG gamepad1.square (raw)", squarePressed);
+            telemetry.addData("DEBUG gamepad1.cross/x (raw)", gamepad1.x);
 
             double feederServoPosition;
             if (gamepad1.left_trigger > 0.05) {
                 // Manual override: left trigger directly sets the servo's absolute position.
                 feederServoPosition = gamepad1.left_trigger;
             } else {
-                feederServoPosition = feederServoUp ? FEEDER_SERVO_UP_POSITION : FEEDER_SERVO_BOTTOM_POSITION;
+                feederServoPosition = trianglePressed ? FEEDER_SERVO_UP_POSITION : FEEDER_SERVO_BOTTOM_POSITION;
             }
             robot.setFeederServoPosition(feederServoPosition);
+
+            // pollenFeederServo rests at 120 degrees (POLLEN_FEEDER_SERVO_BOTTOM_POSITION) when
+            // square is released, and holding square drives it down to 20 degrees
+            // (POLLEN_FEEDER_SERVO_UP_POSITION) for as long as it's held.
+            double pollenFeederServoPosition =
+                    squarePressed ? POLLEN_FEEDER_SERVO_UP_POSITION : POLLEN_FEEDER_SERVO_BOTTOM_POSITION;
+            robot.setPollenFeederServoPosition(pollenFeederServoPosition);
 
             robot.setTargetShooterRPM(25);
 
@@ -146,7 +157,10 @@ public class MecanumStraferChassis extends LinearOpMode {
             telemetry.addData("Intake Group Power (L/R Servo, Feeder Motor/Servo)", "%.2f", intakePower);
             telemetry.addData("Feeder Servo Position (Commanded)", "%.2f", feederServoPosition);
             telemetry.addData("Feeder Servo Position (Actual)", "%.2f", robot.feederServo != null ? robot.feederServo.getPosition() : -1.0);
-            telemetry.addData("Feeder Servo Toggle State", feederServoUp ? "UP" : "DOWN");
+            telemetry.addData("Feeder Servo Angle (Triangle Held)", "%.1f degrees", feederServoPosition * RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES);
+            telemetry.addData("Pollen Feeder Servo Position (Commanded)", "%.2f", pollenFeederServoPosition);
+            telemetry.addData("Pollen Feeder Servo Position (Actual)", "%.2f", robot.pollenFeederServo != null ? robot.pollenFeederServo.getPosition() : -1.0);
+            telemetry.addData("Pollen Feeder Servo Angle (Square Held)", "%.1f degrees", pollenFeederServoPosition * RobotHardware.POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES);
             telemetry.addData("Target RPM: ", robot.getTargetShooterRPM());
             telemetry.addData("RPMs: ", robot.getMotorRPM());
 

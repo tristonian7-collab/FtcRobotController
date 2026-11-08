@@ -38,6 +38,7 @@ public class RobotHardware {
     public double targetShooterRPM   = 0.0;
     public DcMotor feederMotor = null;
     public Servo   feederServo = null;
+    public Servo   pollenFeederServo = null;
     public CRServo leftServo   = null;
     public CRServo rightServo  = null;
 
@@ -76,6 +77,12 @@ public class RobotHardware {
         }
 
         try {
+            pollenFeederServo = hardwareMap.get(Servo.class, "pollenFeederServo");
+        } catch (Exception e) {
+            pollenFeederServo = null;
+        }
+
+        try {
             feederMotor = hardwareMap.get(DcMotor.class, "feederMotor");
         } catch (Exception e) {
             feederMotor = null;
@@ -100,6 +107,9 @@ public class RobotHardware {
         rightServo.setDirection(CRServo.Direction.REVERSE);
         if (feederServo != null) {
             feederServo.setDirection(Servo.Direction.FORWARD);
+        }
+        if (pollenFeederServo != null) {
+            pollenFeederServo.setDirection(Servo.Direction.FORWARD);
         }
         if (feederMotor != null) {
             feederMotor.setDirection(DcMotor.Direction.FORWARD);
@@ -196,6 +206,24 @@ public class RobotHardware {
     /** Returns the feederServo's last-commanded position, or 0.0 if the servo isn't present. */
     public double getFeederServoPosition() {
         return feederServo != null ? feederServo.getPosition() : 0.0;
+    }
+
+    // pollenFeederServo is a separate ranged (positional) gate servo, same style as feederServo
+    // above, spanning POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES degrees of physical rotation across
+    // its full position range (0.0 = 0 degrees, 1.0 = full range).
+    // TODO: Calibrate this value to the actual servo's physical range of motion.
+    public static final double POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES = 300.0;
+
+    /** Sets the pollenFeederServo (ranged/positional gate servo) to an absolute position, clamped to [0.0, 1.0]. */
+    public void setPollenFeederServoPosition(double position) {
+        if (pollenFeederServo != null) {
+            pollenFeederServo.setPosition(Range.clip(position, 0.0, 1.0));
+        }
+    }
+
+    /** Returns the pollenFeederServo's last-commanded position, or 0.0 if the servo isn't present. */
+    public double getPollenFeederServoPosition() {
+        return pollenFeederServo != null ? pollenFeederServo.getPosition() : 0.0;
     }
 
     /** Sets the flywheel (shooter) power. */
