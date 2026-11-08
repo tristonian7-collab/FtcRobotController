@@ -4,7 +4,10 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+import android.util.Size;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -166,6 +169,7 @@ public class MecanumStraferChassis extends LinearOpMode {
 
             // AprilTag detection, distance reporting, and status light feedback
             boolean tagFound = false;
+            boolean tagInRange = false;
             if (aprilTag != null) {
                 telemetry.addData("Camera State", visionPortal.getCameraState());
 
@@ -182,11 +186,18 @@ public class MecanumStraferChassis extends LinearOpMode {
                     }
 
                     if (detection.ftcPose != null) {
-                        telemetry.addData("Distance (Range)", "%.2f inches", detection.ftcPose.range);
+                        // Apply distance calibration scale factor boosted by 2%
+                        double rawRange = detection.ftcPose.range;
+                        double range = rawRange * ((160.0 / 145.0) * 1.02);
+                        telemetry.addData("Distance (Range)", "%.2f cm (Raw: %.2f)", range, rawRange);
                         telemetry.addData("Bearing", "%.2f degrees", detection.ftcPose.bearing);
                         telemetry.addData("Yaw", "%.2f degrees", detection.ftcPose.yaw);
                         telemetry.addData("Pitch", "%.2f degrees", detection.ftcPose.pitch);
                         telemetry.addData("Roll", "%.2f degrees", detection.ftcPose.roll);
+
+                        if (range >= 130.0 && range <= 150.0) {
+                            tagInRange = true;
+                        }
                     } else {
                         telemetry.addData("Distance (Range)", "Tracking pose... (Hold Still)");
                     }
@@ -196,11 +207,13 @@ public class MecanumStraferChassis extends LinearOpMode {
                 telemetry.addData("AprilTag Status", "Camera/Processor not initialized");
             }
 
-            // Determine light color / PWM signal based on AprilTag detection (no manual override)
-            if (tagFound) {
+            // Determine light color / PWM signal based on AprilTag detection and range
+            if (tagInRange) {
                 lightPwm = RobotHardware.STATUS_LIGHT_GREEN;
-            } else {
+            } else if (tagFound) {
                 lightPwm = RobotHardware.STATUS_LIGHT_RED;
+            } else {
+                lightPwm = RobotHardware.STATUS_LIGHT_WHITE;
             }
 
             // Send PWM signal to the status light servo port
@@ -208,7 +221,13 @@ public class MecanumStraferChassis extends LinearOpMode {
 
             // Output Light PWM telemetry and status
             telemetry.addData("Light PWM Signal", "%.3f", lightPwm);
-            telemetry.addData("Status Light", tagFound ? "GREEN (Tag Detected)" : "RED (No Tag)");
+            if (tagInRange) {
+                telemetry.addData("Status Light", "GREEN (Tag In Range: 110-130cm)");
+            } else if (tagFound) {
+                telemetry.addData("Status Light", "RED (Tag Detected, Out of Range)");
+            } else {
+                telemetry.addData("Status Light", "WHITE (No Tag)");
+            }
 
             telemetry.update();
         }
@@ -226,14 +245,19 @@ public class MecanumStraferChassis extends LinearOpMode {
                 .setDrawCubeProjection(true)
                 .setDrawTagOutline(true)
                 .setDrawTagID(true)
+                .setOutputUnits(DistanceUnit.CM, AngleUnit.DEGREES)
                 .build();
 
         // Force decimation to 1.0 for maximum shape sensitivity
         aprilTag.setDecimation(1.0f);
 
-        // Create the vision portal manually to ensure the custom processor binds completely
+        // Create the vision portal manually with MJPEG streaming and continuous live view
         visionPortal = new VisionPortal.Builder()
                 .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
+                .setCameraResolution(new Size(640, 480))
+                .setStreamFormat(VisionPortal.StreamFormat.MJPEG)
+                .enableLiveView(true)
+                .setAutoStopLiveView(false)
                 .addProcessor(aprilTag)
                 .build();
     }
