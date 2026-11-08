@@ -19,7 +19,8 @@ import java.util.List;
  * 2. If a tag is seen in that window, fire the shooter, then run the parking movement.
  * 3. If no tag is seen (including if the webcam isn't mounted/configured, which just means
  *    initAprilTag() never finds any detections), skip firing entirely and just run the
- *    parking movement - 60cm backward, then 180cm to the right.
+ *    parking movement - 60cm backward, then 180cm to the left (reversed from the original
+ *    forward/right parking path).
  */
 @Autonomous(name = "secondaryparking", group = "StarterBot")
 public class SecondAuto extends LinearOpMode {
@@ -151,18 +152,19 @@ public class SecondAuto extends LinearOpMode {
             // Whether or not we fired, the shooter isn't needed anymore before parking.
             robot.setShooterPower(0.0);
 
-            // Parking movement always runs: 60cm forward, then 180cm to the right.
-            telemetry.addData("Status", "Moving 60cm forward");
+            // Parking movement always runs, reversed from the original path: 60cm backward,
+            // then 180cm to the left.
+            telemetry.addData("Status", "Moving 60cm backward");
             telemetry.update();
 
-            moveForward(60.0);
+            moveBackward(60.0);
             stopRobot();
             sleep(250);
 
-            telemetry.addData("Status", "Moving 180cm right");
+            telemetry.addData("Status", "Moving 180cm left");
             telemetry.update();
 
-            moveRight(180.0);
+            moveLeft(180.0);
             stopRobot();
 
             telemetry.addData("Status", "Done");
@@ -223,6 +225,25 @@ public class SecondAuto extends LinearOpMode {
         stopMoving(DRIVE_SPEED);
     }
 
+    private void moveBackward(double distanceCm) {
+        double timeSeconds = distanceCm / CM_PER_SECOND;
+
+        telemetry.addData("Path", "Moving %.1f cm backward", distanceCm);
+        telemetry.update();
+
+        // 1. Ramp up
+        startMoving(-DRIVE_SPEED);
+
+        // 2. Constant speed
+        long steadyStateTimeMs = (long) ((timeSeconds * 1000) - RAMP_UP_TIME_MS - RAMP_DOWN_TIME_MS);
+        if (steadyStateTimeMs > 0) {
+            sleep(steadyStateTimeMs);
+        }
+
+        // 3. Ramp down
+        stopMoving(-DRIVE_SPEED);
+    }
+
     private void moveRight(double distanceCm) {
         double timeSeconds = distanceCm / CM_PER_SECOND;
 
@@ -240,6 +261,25 @@ public class SecondAuto extends LinearOpMode {
 
         // 3. Ramp down
         stopStrafing(DRIVE_SPEED);
+    }
+
+    private void moveLeft(double distanceCm) {
+        double timeSeconds = distanceCm / CM_PER_SECOND;
+
+        telemetry.addData("Path", "Moving %.1f cm left", distanceCm);
+        telemetry.update();
+
+        // 1. Ramp up (negative strafe = left, per RobotHardware#driveMecanum convention)
+        startStrafing(-DRIVE_SPEED);
+
+        // 2. Constant speed
+        long steadyStateTimeMs = (long) ((timeSeconds * 1000) - RAMP_UP_TIME_MS - RAMP_DOWN_TIME_MS);
+        if (steadyStateTimeMs > 0) {
+            sleep(steadyStateTimeMs);
+        }
+
+        // 3. Ramp down
+        stopStrafing(-DRIVE_SPEED);
     }
 
     private void startMoving(double targetPower) {
