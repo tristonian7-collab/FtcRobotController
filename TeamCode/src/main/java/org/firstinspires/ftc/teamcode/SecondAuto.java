@@ -5,6 +5,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -60,6 +62,20 @@ public class SecondAuto extends LinearOpMode {
             FEEDER_SERVO_BOTTOM_POSITION + (FEEDER_SERVO_ROTATE_DEGREES / FEEDER_SERVO_FULL_RANGE_DEGREES);
     public static final double FEEDER_SERVO_ROTATE_DURATION_SECONDS =
             FEEDER_SERVO_ROTATE_DEGREES / FEEDER_SERVO_DEGREES_PER_SECOND;
+
+    // pollenFeederServo: rests at 120 degrees and should move down to 20 degrees - identical to
+    // what happens while Square is held in MecanumStraferChassis - the instant an AprilTag is
+    // detected, then release back to resting once we're done with the shoot/skip decision.
+    public static final double POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES = RobotHardware.POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES;
+    public static final double POLLEN_FEEDER_SERVO_RESTING_DEGREES = 120.0;
+    public static final double POLLEN_FEEDER_SERVO_PRESSED_DEGREES = 20.0;
+    public static final double POLLEN_FEEDER_SERVO_RESTING_POSITION =
+            POLLEN_FEEDER_SERVO_RESTING_DEGREES / POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES;
+    public static final double POLLEN_FEEDER_SERVO_PRESSED_POSITION =
+            POLLEN_FEEDER_SERVO_PRESSED_DEGREES / POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES;
+
+    // Distance calibration scale factor - matches MecanumStraferChassis's AprilTag range calibration.
+    public static final double DISTANCE_CALIBRATION_SCALE = (160.0 / 145.0) * 1.02;
     // ----------------------------
 
     // Centralized hardware map shared across all OpModes
@@ -80,6 +96,8 @@ public class SecondAuto extends LinearOpMode {
         // Keep the feeder gate closed so nothing can fire while the shooter spins up and
         // we're watching for an AprilTag below.
         robot.setFeederServoPosition(FEEDER_SERVO_BOTTOM_POSITION);
+        // pollenFeederServo starts resting (released), same as Square released in MecanumStraferChassis.
+        robot.setPollenFeederServoPosition(POLLEN_FEEDER_SERVO_RESTING_POSITION);
 
         // Initialize Vision (try-catch since the webcam may not be mounted/configured on this
         // robot yet - if it isn't, aprilTag stays null and we simply never "see" a tag below,
@@ -113,6 +131,7 @@ public class SecondAuto extends LinearOpMode {
             while (opModeIsActive() && !tagSeen && tagTimer.seconds() < APRILTAG_WAIT_SECONDS) {
                 if (aprilTag != null) {
                     List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+                    double closestDistanceCm = getClosestAprilTagDistanceCm(currentDetections);
                     if (!currentDetections.isEmpty()) {
                         tagSeen = true;
                         AprilTagDetection firstDetection = currentDetections.get(0);
@@ -121,11 +140,19 @@ public class SecondAuto extends LinearOpMode {
                         }
                         // Make the detection obvious on the Driver Hub as soon as it happens.
                         telemetry.addData("AprilTag Status", "SEEN! (ID %d) - firing", seenTagId);
+                        // Mirror MecanumStraferChassis's Square-held pollenFeederServo behavior
+                        // now that a tag has actually been detected.
+                        robot.setPollenFeederServoPosition(POLLEN_FEEDER_SERVO_PRESSED_POSITION);
                     } else {
                         telemetry.addData("AprilTag Status", "Watching for AprilTag...");
                     }
                     telemetry.addData("Camera State", visionPortal.getCameraState());
                     telemetry.addData("Raw Detections Count", currentDetections.size());
+                    if (closestDistanceCm >= 0) {
+                        telemetry.addData("Closest AprilTag Distance", "%.2f cm", closestDistanceCm);
+                    } else {
+                        telemetry.addData("Closest AprilTag Distance", "No pose data yet");
+                    }
                 } else {
                     telemetry.addData("AprilTag Status", "Camera/Processor not initialized (no webcam)");
                 }
@@ -151,6 +178,10 @@ public class SecondAuto extends LinearOpMode {
 
             // Whether or not we fired, the shooter isn't needed anymore before parking.
             robot.setShooterPower(0.0);
+
+            // Release pollenFeederServo back to its resting position, mirroring releasing
+            // Square in MecanumStraferChassis.
+            robot.setPollenFeederServoPosition(POLLEN_FEEDER_SERVO_RESTING_POSITION);
 
             // Parking movement always runs, reversed from the original path: 60cm backward,
             // then 180cm to the left.
@@ -336,12 +367,30 @@ public class SecondAuto extends LinearOpMode {
         robot.stopDrive();
     }
 
+    /**
+     * Scans all current detections and returns the calibrated distance (cm) of the closest one,
+     * or -1.0 if none of the detections have pose data yet.
+     */
+    private double getClosestAprilTagDistanceCm(List<AprilTagDetection> detections) {
+        double closestDistanceCm = -1.0;
+        for (AprilTagDetection detection : detections) {
+            if (detection.ftcPose != null) {
+                double range = detection.ftcPose.range * DISTANCE_CALIBRATION_SCALE;
+                if (closestDistanceCm < 0 || range < closestDistanceCm) {
+                    closestDistanceCm = range;
+                }
+            }
+        }
+        return closestDistanceCm;
+    }
+
     private void initAprilTag() {
         aprilTag = new AprilTagProcessor.Builder()
                 .setDrawAxes(true)
                 .setDrawCubeProjection(true)
                 .setDrawTagOutline(true)
                 .setDrawTagID(true)
+                .setOutputUnits(DistanceUnit.CM, AngleUnit.DEGREES)
                 .build();
 
         // Force decimation to 1.0 for maximum shape sensitivity
