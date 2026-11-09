@@ -120,7 +120,7 @@ public class MecanumStraferChassis extends LinearOpMode {
             // 3-5. Mecanum Kinematics Power Distribution, normalization, and motor output
             robot.driveMecanum(forward, strafe, turn);
 
-            // 6. Control Intake Group (leftServo, rightServo, feederMotor, feederServo) together with R2 Trigger
+            // 6. Control Intake Group (feederMotor, feederServo) together with R2 Trigger
             double intakePower = gamepad1.right_trigger;
             robot.setIntakePower(intakePower);
 
@@ -157,7 +157,7 @@ public class MecanumStraferChassis extends LinearOpMode {
             telemetry.addData("Joystick Inputs", "Y: (%.2f), X: (%.2f), Turn: (%.2f)", forward, strafe, turn);
             telemetry.addData("Motor Target Powers", "FL: (%.2f) | FR: (%.2f)", robot.frontLeftDrive.getPower(), robot.frontRightDrive.getPower());
             telemetry.addData("Motor Target Powers", "BL: (%.2f) | BR: (%.2f)", robot.backLeftDrive.getPower(), robot.backRightDrive.getPower());
-            telemetry.addData("Intake Group Power (L/R Servo, Feeder Motor/Servo)", "%.2f", intakePower);
+            telemetry.addData("Intake Group Power (Feeder Motor/Servo)", "%.2f", intakePower);
             telemetry.addData("Feeder Servo Position (Commanded)", "%.2f", feederServoPosition);
             telemetry.addData("Feeder Servo Position (Actual)", "%.2f", robot.feederServo != null ? robot.feederServo.getPosition() : -1.0);
             telemetry.addData("Feeder Servo Angle (Triangle Held)", "%.1f degrees", feederServoPosition * RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES);

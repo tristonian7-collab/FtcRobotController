@@ -17,7 +17,7 @@ import java.util.List;
 public class AprilTagAutonomous extends LinearOpMode {
 
     // Centralized hardware map shared across all OpModes (4-motor Mecanum drivetrain,
-    // shooter, and intake group: leftServo/rightServo/feederMotor/feederServo)
+    // shooter, and intake group: feederMotor/feederServo)
     private final RobotHardware robot = new RobotHardware();
 
     /* Vision members */
@@ -160,7 +160,7 @@ public class AprilTagAutonomous extends LinearOpMode {
         sleep(2000); // Wait for shooter to spin up
 
         // Feed the ball into the shooter using the shared intake group
-        // (leftServo, rightServo, feederMotor, feederServo)
+        // (feederMotor, feederServo)
         robot.setIntakePower(1.0);
         sleep(1000); // Wait for feed
         robot.setIntakePower(0.0);

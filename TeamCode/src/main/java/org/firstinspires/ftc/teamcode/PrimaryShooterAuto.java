@@ -144,8 +144,8 @@ public class PrimaryShooterAuto extends LinearOpMode {
                 sleep((long) (FEEDER_SERVO_ROTATE_DURATION_SECONDS * 1000));
             }
 
-            // Spin the intake group (leftServo, rightServo, feederMotor) continuously for the
-            // entire OpMode. These must always run together. feederServo is a positional gate
+            // Spin the intake group (feederMotor) continuously for the
+            // entire OpMode. feederServo is a positional gate
             // and simply holds at its open position (set above) for the rest of the OpMode.
             if (robot.feederMotor != null) {
                 robot.feederMotor.setPower(1.0);
@@ -156,7 +156,7 @@ public class PrimaryShooterAuto extends LinearOpMode {
             timer.reset();
 
             while (opModeIsActive() && timer.seconds() < 10) {
-                // Intake group: leftServo, rightServo, feederMotor always together
+                // Intake group: feederMotor
                 robot.setIntakePower(1.0);
                 // Flywheel remains spinning continuously at RobotHardware.DEFAULT_SHOOTER_RPM
                 robot.setTargetShooterRPM(RobotHardware.DEFAULT_SHOOTER_RPM);
@@ -167,8 +167,6 @@ public class PrimaryShooterAuto extends LinearOpMode {
                 // Show what the software thinks is happening
                 telemetry.addData("Status", "feeder Running");
                 telemetry.addData("Timer", "%.1f / 10.0s", timer.seconds());
-                telemetry.addData("Servo L", "Power: %.2f", robot.leftServo.getPower());
-                telemetry.addData("Servo R", "Power: %.2f", robot.rightServo.getPower());
                 if (robot.feederServo != null) {
                     telemetry.addData("feeder Servo", "Position: %.2f", robot.feederServo.getPosition());
                 } else {
@@ -236,7 +234,7 @@ public class PrimaryShooterAuto extends LinearOpMode {
                 idle();
             }
 
-            // Stop the drive train and intake group (leftServo, rightServo, feederMotor).
+            // Stop the drive train and intake group (feederMotor).
             // feederServo is a positional gate and simply remains at its current position.
             stopRobot();
             robot.setIntakePower(0.0);

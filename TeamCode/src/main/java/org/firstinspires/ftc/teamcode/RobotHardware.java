@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -28,8 +27,6 @@ public class RobotHardware {
 
     // --- Shooter / Intake Group ---
     // feederMotor rolls the ball into the robot (part of the intake group).
-    // leftServo/rightServo are the intake rollers.
-    // These three (leftServo, rightServo, feederMotor) must always run together.
     // feederServo is a separate ranged (positional) gate servo that pushes the ball from the
     // intake into the shooter by moving to an absolute position (not power-driven).
     public DcMotor shooter     = null;
@@ -45,8 +42,6 @@ public class RobotHardware {
     public DcMotor feederMotor = null;
     public Servo   feederServo = null;
     public Servo   pollenFeederServo = null;
-    public CRServo leftServo   = null;
-    public CRServo rightServo  = null;
 
     // --- Status Light / Sensors ---
     public Servo statusLight = null;
@@ -54,7 +49,7 @@ public class RobotHardware {
 
     /**
      * Initializes all hardware devices using the standard REV Hub configuration names.
-     * frontLeftDrive/frontRightDrive/backLeftDrive/backRightDrive/shooter/leftServo/rightServo
+     * frontLeftDrive/frontRightDrive/backLeftDrive/backRightDrive/shooter
      * are required and will throw if missing from the configuration. feederMotor, feederServo,
      * statusLight, and imu are optional (left null if not found/configured) so calling code
      * should null-check them before use.
@@ -66,8 +61,6 @@ public class RobotHardware {
         backLeftDrive   = hardwareMap.get(DcMotor.class, "backLeftDrive");
         backRightDrive  = hardwareMap.get(DcMotor.class, "backRightDrive");
         shooter         = hardwareMap.get(DcMotor.class, "shooterMotor");
-        leftServo       = hardwareMap.get(CRServo.class, "leftServo");
-        rightServo      = hardwareMap.get(CRServo.class, "rightServo");
 
         // Optional devices
         try {
@@ -109,8 +102,6 @@ public class RobotHardware {
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         shooter.setDirection(DcMotor.Direction.FORWARD);
-        leftServo.setDirection(CRServo.Direction.FORWARD);
-        rightServo.setDirection(CRServo.Direction.REVERSE);
         if (feederServo != null) {
             feederServo.setDirection(Servo.Direction.FORWARD);
         }
@@ -180,13 +171,11 @@ public class RobotHardware {
     }
 
     /**
-     * Sets power for the intake group (leftServo, rightServo, feederMotor).
-     * These three components must always run together in sync. feederServo is a separate
-     * ranged (positional) gate servo controlled via {@link #setFeederServoPosition(double)}.
+     * Sets power for the intake group (feederMotor).
+     * feederServo is a separate ranged (positional) gate servo controlled via
+     * {@link #setFeederServoPosition(double)}.
      */
     public void setIntakePower(double power) {
-        leftServo.setPower(power);
-        rightServo.setPower(power);
         if (feederMotor != null) {
             feederMotor.setPower(power);
         }
