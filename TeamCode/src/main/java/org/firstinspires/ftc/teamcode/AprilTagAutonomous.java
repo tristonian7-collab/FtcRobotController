@@ -31,8 +31,6 @@ public class AprilTagAutonomous extends LinearOpMode {
     final double MAX_AUTO_SPEED = 0.5;
     final double MAX_AUTO_TURN  = 0.3;
 
-    final double SHOOTER_POWER = 0.55;
-
     @Override
     public void runOpMode() {
         // Initialize all hardware devices (drivetrain, shooter, intake group, IMU)
@@ -118,7 +116,7 @@ public class AprilTagAutonomous extends LinearOpMode {
             telemetry.addData("Y Controller Angle (Stick)", gamepad1.left_stick_y);
             YawPitchRollAngles orientation = robot.imu.getRobotYawPitchRollAngles();
             telemetry.addData("Y Controller Angle (Pitch)", orientation.getPitch(AngleUnit.DEGREES));
-            telemetry.addData("Shooter Power", "%.2f", robot.shooter.getPower());
+            telemetry.addData("Shooter RPM", "%.1f", robot.getMotorRPM());
             telemetry.update();
             sleep(10);
         }
@@ -156,8 +154,8 @@ public class AprilTagAutonomous extends LinearOpMode {
         telemetry.addData("Action", "Firing!!!");
         telemetry.update();
 
-        robot.setShooterPower(SHOOTER_POWER);
-        telemetry.addData("Shooter Power", "%.2f", robot.shooter.getPower());
+        robot.setTargetShooterRPM(RobotHardware.DEFAULT_SHOOTER_RPM);
+        telemetry.addData("Shooter RPM", "%.1f", robot.getMotorRPM());
         telemetry.update();
         sleep(2000); // Wait for shooter to spin up
 
@@ -167,6 +165,6 @@ public class AprilTagAutonomous extends LinearOpMode {
         sleep(1000); // Wait for feed
         robot.setIntakePower(0.0);
 
-        robot.setShooterPower(0);
+        robot.setTargetShooterRPM(0);
     }
 }

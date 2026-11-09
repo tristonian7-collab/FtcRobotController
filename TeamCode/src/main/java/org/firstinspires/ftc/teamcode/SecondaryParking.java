@@ -25,14 +25,11 @@ import java.util.List;
  *    forward/right parking path).
  */
 @Autonomous(name = "secondaryparking", group = "StarterBot")
-public class SecondAuto extends LinearOpMode {
+public class SecondaryParking extends LinearOpMode {
 
     // --- Adjustable Constants ---
     public static final double DRIVE_SPEED = 0.5;
     public static final double CM_PER_SECOND = 71.33; // 214cm / 3.0s
-
-    // Flywheel (shooter) power level - matches HorseAuto's primary shooter auto.
-    public static final double SHOOTER_POWER = 0.575;
 
     // How long to watch for an AprilTag before giving up and just parking.
     public static final double APRILTAG_WAIT_SECONDS = 15.0;
@@ -118,7 +115,7 @@ public class SecondAuto extends LinearOpMode {
         if (opModeIsActive()) {
             // Power up the shooter flywheel immediately so it has time to reach speed, but do
             // NOT fire yet - the feeder gate stays closed and the intake group stays off.
-            robot.setShooterPower(SHOOTER_POWER);
+            robot.setTargetShooterRPM(RobotHardware.DEFAULT_SHOOTER_RPM);
 
             telemetry.addData("Status", "Shooter spinning up - watching for AprilTag");
             telemetry.update();
@@ -158,7 +155,7 @@ public class SecondAuto extends LinearOpMode {
                 }
 
                 telemetry.addData("Timer", "%.1f / %.0fs", tagTimer.seconds(), APRILTAG_WAIT_SECONDS);
-                telemetry.addData("shooter Motor", "Power: %.2f", robot.shooter.getPower());
+                telemetry.addData("shooter Motor", "RPM: %.1f", robot.getMotorRPM());
                 telemetry.update();
 
                 idle();
@@ -177,7 +174,7 @@ public class SecondAuto extends LinearOpMode {
             }
 
             // Whether or not we fired, the shooter isn't needed anymore before parking.
-            robot.setShooterPower(0.0);
+            robot.setTargetShooterRPM(0.0);
 
             // Release pollenFeederServo back to its resting position, mirroring releasing
             // Square in MecanumStraferChassis.
@@ -224,7 +221,7 @@ public class SecondAuto extends LinearOpMode {
 
         while (opModeIsActive() && fireTimer.seconds() < SHOOT_DURATION_SECONDS) {
             robot.setIntakePower(1.0);
-            robot.setShooterPower(SHOOTER_POWER);
+            robot.setTargetShooterRPM(RobotHardware.DEFAULT_SHOOTER_RPM);
 
             telemetry.addData("AprilTag Status", "SEEN! (ID %d)", seenTagId);
             telemetry.addData("Status", "Firing");

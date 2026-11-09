@@ -32,7 +32,6 @@ public class TestHardware {
     // intake into the shooter by moving to an absolute position (not power-driven).
     public DcMotor shooter     = null;
     public double ticksPerRev;
-    public double targetShooterPower = 0.0;
     public double targetShooterRPM   = 0.0;
     /*
     public DcMotor feederMotor = null;
@@ -221,29 +220,6 @@ public class TestHardware {
         return feederServo != null ? feederServo.getPosition() : 0.0;
     }
     */
-    /** Sets the flywheel (shooter) power. */
-    /*
-    public void setShooterPower(double power) {
-        this.targetShooterPower = power;
-        if (shooter != null) {
-            shooter.setPower(power);
-        }
-    }
-    */
-    /**
-     * Sets the target flywheel (shooter) power.
-     *
-     * @param targetPower Power level to apply to the shooter motor [-1.0, 1.0]
-     */
-    /*public void setTargetShooterPower(double targetPower) {
-        setShooterPower(targetPower);
-    }*/
-
-    /** Returns the target flywheel (shooter) power. */
-    public double getTargetShooterPower() {
-        return targetShooterPower;
-    }
-
     /**
      * Sets the target flywheel (shooter) speed in RPM using closed-loop velocity control via DcMotorEx.
      *

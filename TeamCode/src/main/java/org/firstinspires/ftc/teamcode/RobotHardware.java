@@ -34,8 +34,14 @@ public class RobotHardware {
     // intake into the shooter by moving to an absolute position (not power-driven).
     public DcMotor shooter     = null;
     public double ticksPerRev;
-    public double targetShooterPower = 0.0;
     public double targetShooterRPM   = 0.0;
+
+    // Default target flywheel (shooter) speed in RPM, shared by every OpMode (TeleOp and
+    // Autonomous) so shooting speed stays consistent across modes. The getter/setter below
+    // still allow an individual OpMode to override this with a different target RPM later if
+    // ever needed; none currently do.
+    public static final double DEFAULT_SHOOTER_RPM = 25.0;
+
     public DcMotor feederMotor = null;
     public Servo   feederServo = null;
     public Servo   pollenFeederServo = null;
@@ -224,28 +230,6 @@ public class RobotHardware {
     /** Returns the pollenFeederServo's last-commanded position, or 0.0 if the servo isn't present. */
     public double getPollenFeederServoPosition() {
         return pollenFeederServo != null ? pollenFeederServo.getPosition() : 0.0;
-    }
-
-    /** Sets the flywheel (shooter) power. */
-    public void setShooterPower(double power) {
-        this.targetShooterPower = power;
-        if (shooter != null) {
-            shooter.setPower(power);
-        }
-    }
-
-    /**
-     * Sets the target flywheel (shooter) power.
-     *
-     * @param targetPower Power level to apply to the shooter motor [-1.0, 1.0]
-     */
-    public void setTargetShooterPower(double targetPower) {
-        setShooterPower(targetPower);
-    }
-
-    /** Returns the target flywheel (shooter) power. */
-    public double getTargetShooterPower() {
-        return targetShooterPower;
     }
 
     /**

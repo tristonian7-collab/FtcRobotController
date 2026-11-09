@@ -18,14 +18,11 @@ import java.util.List;
  * 2. Wheels are currently disabled for testing.
  */
 @Autonomous(name = "primaryshooterauto", group = "StarterBot")
-public class HorseAuto extends LinearOpMode {
+public class PrimaryShooterAuto extends LinearOpMode {
 
     // --- Adjustable Constants ---
     public static final double DRIVE_SPEED = 0.5;
     public static final double CM_PER_SECOND = 71.33; // 214cm / 3.0s
-
-    // Flywheel (shooter) power level
-    public static final double SHOOTER_POWER = 0.575;
 
     public static final double TURN_SPEED = 0.33;
     public static final double TURN_SECONDS = 1.0;
@@ -113,11 +110,11 @@ public class HorseAuto extends LinearOpMode {
         runtime.reset();
 
         if (opModeIsActive()) {
-            // Flywheel (shooter) spins continuously at SHOOTER_POWER for the entire OpMode.
-            // Start it immediately at the start of the OpMode so it has the full
+            // Flywheel (shooter) spins continuously at RobotHardware.DEFAULT_SHOOTER_RPM for the
+            // entire OpMode. Start it immediately at the start of the OpMode so it has the full
             // FEEDER_SERVO_BOTTOM_WAIT_MS window to reach speed while the robot moves backward
             // and the gate (feederServo) stays closed.
-            robot.setShooterPower(SHOOTER_POWER);
+            robot.setTargetShooterRPM(RobotHardware.DEFAULT_SHOOTER_RPM);
 
             // Move backward 5cm immediately as well, in parallel with the shooter spin-up and
             // gate wait below. feederServo stays held at its bottom (closed) position throughout.
@@ -161,8 +158,8 @@ public class HorseAuto extends LinearOpMode {
             while (opModeIsActive() && timer.seconds() < 10) {
                 // Intake group: leftServo, rightServo, feederMotor always together
                 robot.setIntakePower(1.0);
-                // Flywheel remains spinning continuously at SHOOTER_POWER
-                robot.setShooterPower(SHOOTER_POWER);
+                // Flywheel remains spinning continuously at RobotHardware.DEFAULT_SHOOTER_RPM
+                robot.setTargetShooterRPM(RobotHardware.DEFAULT_SHOOTER_RPM);
 
                 // feederServo gate was already moved clockwise to its open position after the
                 // 4-second wait above and simply stays there for the rest of the shoot loop.
@@ -182,7 +179,7 @@ public class HorseAuto extends LinearOpMode {
                 } else {
                     telemetry.addData("feeder Motor", "NOT FOUND");
                 }
-                telemetry.addData("shooter Motor", "Power: %.2f", robot.shooter.getPower());
+                telemetry.addData("shooter Motor", "RPM: %.1f", robot.getMotorRPM());
 
                 // AprilTag detection and distance reporting
                 if (aprilTag != null) {
@@ -219,8 +216,8 @@ public class HorseAuto extends LinearOpMode {
                         stopRobot();
                         telemetry.addData("AprilTag Status", "Tag Detected! Stopped.");
 
-                        // Flywheel is already spinning continuously at SHOOTER_POWER
-                        telemetry.addData("Shooter Status", "Already spinning at %.2f power", SHOOTER_POWER);
+                        // Flywheel is already spinning continuously at RobotHardware.DEFAULT_SHOOTER_RPM
+                        telemetry.addData("Shooter Status", "Already spinning at %.1f RPM", RobotHardware.DEFAULT_SHOOTER_RPM);
                         telemetry.update();
 
                         // Break out of the loop completely once a tag is found to prevent it from starting again
@@ -245,7 +242,7 @@ public class HorseAuto extends LinearOpMode {
             robot.setIntakePower(0.0);
 
             // Shooting is done - power down the flywheel before parking.
-            robot.setShooterPower(0.0);
+            robot.setTargetShooterRPM(0.0);
 
             telemetry.addData("Status", "Stopped - shooting complete");
             telemetry.update();

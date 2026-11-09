@@ -151,7 +151,7 @@ public class MecanumStraferChassis extends LinearOpMode {
                     squarePressed ? POLLEN_FEEDER_SERVO_UP_POSITION : POLLEN_FEEDER_SERVO_BOTTOM_POSITION;
             robot.setPollenFeederServoPosition(pollenFeederServoPosition);
 
-            robot.setTargetShooterRPM(25);
+            robot.setTargetShooterRPM(RobotHardware.DEFAULT_SHOOTER_RPM);
 
             // 8. Monitor outputs live via driver station telemetry text feeds
             telemetry.addData("Joystick Inputs", "Y: (%.2f), X: (%.2f), Turn: (%.2f)", forward, strafe, turn);
