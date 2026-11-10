@@ -1,10 +1,83 @@
 ## TeamCode Module
 
-Welcome!
+This module holds our team's robot controller code: a 4-motor Mecanum drivetrain, a closed-loop
+shooter flywheel, an intake/feeder group, an AprilTag webcam, and a status light. All OpModes
+share one hardware class so device names, directions and setup stay identical everywhere.
 
-This module, TeamCode, is the place where you will write/paste the code for your team's
-robot controller App. This module is currently empty (a clean slate) but the
-process for adding OpModes is straightforward.
+### Shared hardware: `RobotHardware`
+
+Create one instance per OpMode and call `robot.init(hardwareMap)` first. Config names:
+
+| Device | Config name | Required? |
+|---|---|---|
+| Drive motors | `frontLeftDrive`, `frontRightDrive`, `backLeftDrive`, `backRightDrive` | Yes |
+| Shooter flywheel | `shooterMotor` | Yes |
+| Intake motor | `feederMotor` | Optional |
+| Feeder gate servo (positional) | `feederServo` | Optional |
+| Pollen feeder servo (positional) | `pollenFeederServo` | Optional |
+| Status light (goBilda, servo port 1) | `statusLight` | Optional |
+| IMU | `imu` | Optional |
+| Webcam | `Webcam 1` (mapped by each vision OpMode, not `RobotHardware`) | Optional |
+
+Optional devices are left `null` when missing, so null-check them. `leftServo`/`rightServo` were
+removed because they are no longer on the robot.
+
+Key helpers: `driveMecanum(forward, strafe, turn)` (positive strafe = right, negative = left),
+`stopDrive()`, `setIntakePower()`, `setFeederServoPosition()`, `setPollenFeederServoPosition()`,
+`setTargetShooterRPM()` / `getMotorRPM()`, and `setStatusLightWhite/Green/Red()`.
+
+Shooter speed is closed-loop (RPM via `DcMotorEx` velocity). The only shooter API is RPM; the old
+power-based API is gone. The shared default is `RobotHardware.DEFAULT_SHOOTER_RPM` (25.0), used by
+every OpMode.
+
+Servo angles assume a 300 degree full range (`*_FULL_RANGE_DEGREES`), which is still an
+uncalibrated TODO. If a servo moves the wrong way, flip its direction in `RobotHardware.init`.
+
+`hardware/TestHardware.java` is a parallel copy of the hardware class for experiments.
+
+### OpModes
+
+| OpMode (Driver Station name) | Class | Type | What it does |
+|---|---|---|---|
+| MecanumStraferChassis | `MecanumStraferChassis` | TeleOp | Main driving OpMode (controls below). |
+| primaryshooterauto | `PrimaryShooterAuto` | Auto | Feeder/gate shooting sequence; wheels currently disabled for testing. |
+| secondaryparking | `SecondaryParking` | Auto | Spins up the shooter and watches for an AprilTag for up to 15 s. If one is seen it fires (about 3 s), then always parks: 60 cm backward, then 180 cm left. |
+| AprilTag Auto Firing | `AprilTagAutonomous` | Auto | Tracks an AprilTag and fires. |
+| AprilTag Light Detector | `AprilTagLightDetector` | TeleOp | Vision diagnostic. |
+| AprilTag Distance Test | `DistanceTest` | TeleOp | Reads tag range for calibration. |
+| Status Light Test | `StatusLightTest` | TeleOp | Cycles the status light to verify wiring and config. |
+| EncoderTest | `EncoderTest` | TeleOp | Runs the shooter at the default RPM and shows revs and RPM. |
+
+`CornerAuto` ("secondaryparking2", a 60 cm strafe-only auto) was removed.
+
+### TeleOp controls (gamepad 1, `MecanumStraferChassis`)
+
+* Left stick: drive and strafe. Right stick X: turn.
+* Right trigger: intake motor power.
+* Triangle (hold): feeder gate up (120 degrees); release to return to the bottom.
+* Left trigger: manual override that sets the feeder gate position directly. It takes priority over Triangle.
+* Square (hold): pollen feeder servo moves from its 120 degree rest to 20 degrees.
+* The shooter runs continuously at the default RPM.
+* Status light: white = no tag, red = tag seen but out of range, green = tag in range (130-150 cm).
+  The light cycles through colors during INIT to confirm wiring.
+
+### Autonomous conventions
+
+* Movement is time-based: distance divided by `CM_PER_SECOND` (71.33) at `DRIVE_SPEED` 0.5, with 500 ms ramp-up and ramp-down. There is no encoder feedback.
+* AprilTag range is corrected with `DISTANCE_CALIBRATION_SCALE` = (160/145) * 1.02.
+* Vision setup is wrapped in try/catch, so OpModes still run if the webcam is missing.
+
+### Git
+
+Branch is `master`; remote is `tristonian7-collab/FtcRobotController`. On Windows, git may not be on
+the PATH inside Android Studio's terminal. Use `C:\Program Files\Git\cmd\git.exe`. Pushes
+authenticate through Git Credential Manager (the "Connect to GitHub" window).
+
+---
+
+## Adding OpModes (general FTC guidance)
+
+The process for adding OpModes is straightforward.
 
 ## Creating your own OpModes
 
