@@ -20,14 +20,15 @@ import java.util.List;
  *    watch for an AprilTag for up to APRILTAG_WAIT_SECONDS.
  * 2. If a tag is seen in that window:
  *    a. Open the gate and start the intake spinning, wait GATE_OPEN_WAIT_SECONDS, then do the
- *       initial backward movement (PRE_SHOT_FORWARD_CM).
- *    b. Wait GATE_CLOSE_WAIT_SECONDS, then close the gate.
- *    c. Do the rest of the approach movement - left PRE_SHOT_STRAFE_CM, forward
+ *       initial backward movement (PRE_SHOT_FORWARD_CM), closing the gate right as that
+ *       movement begins.
+ *    b. Do the rest of the approach movement - left PRE_SHOT_STRAFE_CM, forward
  *       PRE_SHOT_FORWARD_CM (undoing the backward leg), then right PRE_SHOT_STRAFE_CM (undoing
  *       the strafe) - to return to the exact spot the tag was first seen at. The intake keeps
  *       running continuously through all of this.
- *    d. Once back at the original position, open the gate again and fire the shooter.
- *    e. Run the parking movement.
+ *    c. Once back at the original position, open the gate again, then nudge backward
+ *       RETURN_POSITION_NUDGE_CM and forward the same distance, then fire the shooter.
+ *    d. Run the parking movement.
  * 3. If no tag is seen (including if the webcam isn't mounted/configured, which just means
  *    initAprilTag() never finds any detections), skip the approach maneuver and firing
  *    entirely and just run the parking movement - 60cm backward, then 180cm to the left
@@ -52,10 +53,13 @@ public class SecondaryParking extends LinearOpMode {
     public static final double PRE_SHOT_FORWARD_CM = 30.0;
     public static final double PRE_SHOT_STRAFE_CM = 20.0;
 
-    // How long to wait after opening the gate before starting the initial forward movement,
-    // and how long to wait after that movement before closing the gate again.
+    // Once back at the original position (end of the approach maneuver), nudge forward this far
+    // and then back the same distance before firing.
+    public static final double RETURN_POSITION_NUDGE_CM = 10.0;
+
+    // How long to wait after opening the gate before starting the initial forward movement.
+    // The gate is then closed right as that initial movement begins (not after a further wait).
     public static final double GATE_OPEN_WAIT_SECONDS = 5.0;
-    public static final double GATE_CLOSE_WAIT_SECONDS = 5.0;
 
     // Calibration for straight line
     public static final double LEFT_P_SCALE = 0.959;
@@ -197,15 +201,13 @@ public class SecondaryParking extends LinearOpMode {
                 telemetry.update();
                 sleep((long) (GATE_OPEN_WAIT_SECONDS * 1000));
 
-                telemetry.addData("Status", "Moving %.0fcm backward (pre-shot approach)", PRE_SHOT_FORWARD_CM);
+                telemetry.addData("Status", "Moving %.0fcm backward (pre-shot approach) - closing gate", PRE_SHOT_FORWARD_CM);
                 telemetry.update();
+                // Close the gate right as the initial movement starts, so it finishes closing
+                // while the robot is still moving backward.
+                robot.setFeederServoPosition(FEEDER_SERVO_BOTTOM_POSITION);
                 moveBackward(PRE_SHOT_FORWARD_CM);
                 stopRobot();
-
-                telemetry.addData("Status", "Waiting %.0fs before closing gate", GATE_CLOSE_WAIT_SECONDS);
-                telemetry.update();
-                sleep((long) (GATE_CLOSE_WAIT_SECONDS * 1000));
-                robot.setFeederServoPosition(FEEDER_SERVO_BOTTOM_POSITION);
 
                 telemetry.addData("Status", "Moving %.0fcm left", PRE_SHOT_STRAFE_CM);
                 telemetry.update();
@@ -222,6 +224,24 @@ public class SecondaryParking extends LinearOpMode {
                 telemetry.addData("Status", "Returning %.0fcm right to original position", PRE_SHOT_STRAFE_CM);
                 telemetry.update();
                 moveRight(PRE_SHOT_STRAFE_CM);
+                stopRobot();
+                sleep(250);
+
+                // Back at the original position - open the gate again now, then nudge forward
+                // and back before firing.
+                telemetry.addData("Status", "Back at original position - opening gate");
+                telemetry.update();
+                robot.setFeederServoPosition(FEEDER_SERVO_OPEN_POSITION);
+
+                telemetry.addData("Status", "Moving %.0fcm back (return nudge)", RETURN_POSITION_NUDGE_CM);
+                telemetry.update();
+                moveBackward(RETURN_POSITION_NUDGE_CM);
+                stopRobot();
+                sleep(250);
+
+                telemetry.addData("Status", "Moving %.0fcm forward (return nudge)", RETURN_POSITION_NUDGE_CM);
+                telemetry.update();
+                moveForward(RETURN_POSITION_NUDGE_CM);
                 stopRobot();
                 sleep(250);
 
