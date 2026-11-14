@@ -53,15 +53,15 @@ public class MecanumStraferChassis extends LinearOpMode {
     // RobotHardware) to each servo's actual physical range of motion so these degree positions
     // are accurate. If a direction is backwards on the robot, flip that servo's direction in
     // RobotHardware#init instead.
-    private static final double FEEDER_SERVO_ROTATE_DEGREES = 120.0;
-    private static final double FEEDER_SERVO_BOTTOM_POSITION = 0.0;
-    private static final double FEEDER_SERVO_UP_POSITION =
-            FEEDER_SERVO_BOTTOM_POSITION
-                    + (FEEDER_SERVO_ROTATE_DEGREES / RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES);
+    private static final double NECTAR_FEEDER_SERVO_ROTATE_DEGREES = 120.0;
+    private static final double NECTAR_FEEDER_SERVO_BOTTOM_POSITION = 0.0;
+    private static final double NECTAR_FEEDER_SERVO_UP_POSITION =
+            NECTAR_FEEDER_SERVO_BOTTOM_POSITION
+                    + (NECTAR_FEEDER_SERVO_ROTATE_DEGREES / RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES);
 
-    // pollenFeederServo: released (resting) = 120 degrees, held (square pressed) = 20 degarees.
-    private static final double POLLEN_FEEDER_SERVO_RESTING_DEGREES = 120.0;
-    private static final double POLLEN_FEEDER_SERVO_PRESSED_DEGREES = 20.0;
+    // pollenFeederServo: released (resting) = 120 degrees, held (square pressed) = 20 degrees.
+    private static final double POLLEN_FEEDER_SERVO_RESTING_DEGREES = 20.0;
+    private static final double POLLEN_FEEDER_SERVO_PRESSED_DEGREES = 120.0;
     private static final double POLLEN_FEEDER_SERVO_BOTTOM_POSITION =
             POLLEN_FEEDER_SERVO_RESTING_DEGREES / RobotHardware.POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES;
     private static final double POLLEN_FEEDER_SERVO_UP_POSITION =
@@ -135,14 +135,14 @@ public class MecanumStraferChassis extends LinearOpMode {
             telemetry.addData("DEBUG gamepad1.square (raw)", squarePressed);
             telemetry.addData("DEBUG gamepad1.cross/x (raw)", gamepad1.x);
 
-            double feederServoPosition;
+            double nectarFeederServoPosition;
             if (gamepad1.left_trigger > 0.05) {
                 // Manual override: left trigger directly sets the servo's absolute position.
-                feederServoPosition = gamepad1.left_trigger;
+                nectarFeederServoPosition = gamepad1.left_trigger;
             } else {
-                feederServoPosition = trianglePressed ? FEEDER_SERVO_UP_POSITION : FEEDER_SERVO_BOTTOM_POSITION;
+                nectarFeederServoPosition = trianglePressed ? NECTAR_FEEDER_SERVO_UP_POSITION : NECTAR_FEEDER_SERVO_BOTTOM_POSITION;
             }
-            robot.setFeederServoPosition(feederServoPosition);
+            robot.setFeederServoPosition(nectarFeederServoPosition);
 
             // pollenFeederServo rests at 120 degrees (POLLEN_FEEDER_SERVO_BOTTOM_POSITION) when
             // square is released, and holding square drives it down to 20 degrees
@@ -158,9 +158,9 @@ public class MecanumStraferChassis extends LinearOpMode {
             telemetry.addData("Motor Target Powers", "FL: (%.2f) | FR: (%.2f)", robot.frontLeftDrive.getPower(), robot.frontRightDrive.getPower());
             telemetry.addData("Motor Target Powers", "BL: (%.2f) | BR: (%.2f)", robot.backLeftDrive.getPower(), robot.backRightDrive.getPower());
             telemetry.addData("Intake Group Power (Feeder Motor/Servo)", "%.2f", intakePower);
-            telemetry.addData("Feeder Servo Position (Commanded)", "%.2f", feederServoPosition);
+            telemetry.addData("Feeder Servo Position (Commanded)", "%.2f", nectarFeederServoPosition);
             telemetry.addData("Feeder Servo Position (Actual)", "%.2f", robot.nectarFeederServo != null ? robot.nectarFeederServo.getPosition() : -1.0);
-            telemetry.addData("Feeder Servo Angle (Triangle Held)", "%.1f degrees", feederServoPosition * RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES);
+            telemetry.addData("Feeder Servo Angle (Triangle Held)", "%.1f degrees", nectarFeederServoPosition * RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES);
             telemetry.addData("Pollen Feeder Servo Position (Commanded)", "%.2f", pollenFeederServoPosition);
             telemetry.addData("Pollen Feeder Servo Position (Actual)", "%.2f", robot.pollenFeederServo != null ? robot.pollenFeederServo.getPosition() : -1.0);
             telemetry.addData("Pollen Feeder Servo Angle (Square Held)", "%.1f degrees", pollenFeederServoPosition * RobotHardware.POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES);
