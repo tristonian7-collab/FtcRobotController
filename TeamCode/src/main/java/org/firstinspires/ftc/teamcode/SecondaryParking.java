@@ -71,7 +71,7 @@ public class SecondaryParking extends LinearOpMode {
 
     // nectarFeederServo is a ranged (positional) servo: "bottom" is its closed/resting position, and
     // it moves up FEEDER_SERVO_ROTATE_DEGREES to its open ("firing") position.
-    public static final double FEEDER_SERVO_FULL_RANGE_DEGREES = RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES;
+    public static final double FEEDER_SERVO_FULL_RANGE_DEGREES = RobotHardware.NECTAR_FEEDER_SERVO_FULL_RANGE_DEGREES;
     public static final double FEEDER_SERVO_ROTATE_DEGREES = 90.0;
     public static final double FEEDER_SERVO_DEGREES_PER_SECOND = 300.0;
     public static final double FEEDER_SERVO_BOTTOM_POSITION = 0.0;

@@ -52,7 +52,7 @@ public class PrimaryShooterAuto extends LinearOpMode {
     // TODO: Calibrate FEEDER_SERVO_DEGREES_PER_SECOND to the actual servo's spec (deg/sec at
     // full speed); keep in sync with the same constant in MecanumStraferChassis.
     public static final long FEEDER_SERVO_BOTTOM_WAIT_MS = 4000;
-    public static final double FEEDER_SERVO_FULL_RANGE_DEGREES = RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES;
+    public static final double FEEDER_SERVO_FULL_RANGE_DEGREES = RobotHardware.NECTAR_FEEDER_SERVO_FULL_RANGE_DEGREES;
     public static final double FEEDER_SERVO_ROTATE_DEGREES = 90.0;
     public static final double FEEDER_SERVO_DEGREES_PER_SECOND = 300.0;
     public static final double FEEDER_SERVO_BOTTOM_POSITION = 0.0;

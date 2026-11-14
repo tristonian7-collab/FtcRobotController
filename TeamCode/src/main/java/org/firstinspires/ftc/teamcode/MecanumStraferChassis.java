@@ -57,11 +57,11 @@ public class MecanumStraferChassis extends LinearOpMode {
     private static final double NECTAR_FEEDER_SERVO_BOTTOM_POSITION = 0.0;
     private static final double NECTAR_FEEDER_SERVO_UP_POSITION =
             NECTAR_FEEDER_SERVO_BOTTOM_POSITION
-                    + (NECTAR_FEEDER_SERVO_ROTATE_DEGREES / RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES);
+                    + (NECTAR_FEEDER_SERVO_ROTATE_DEGREES / RobotHardware.NECTAR_FEEDER_SERVO_FULL_RANGE_DEGREES);
 
     // pollenFeederServo: released (resting) = 120 degrees, held (square pressed) = 20 degrees.
-    private static final double POLLEN_FEEDER_SERVO_RESTING_DEGREES = 20.0;
-    private static final double POLLEN_FEEDER_SERVO_PRESSED_DEGREES = 120.0;
+    private static final double POLLEN_FEEDER_SERVO_RESTING_DEGREES = 120.0;
+    private static final double POLLEN_FEEDER_SERVO_PRESSED_DEGREES = 20.0;
     private static final double POLLEN_FEEDER_SERVO_BOTTOM_POSITION =
             POLLEN_FEEDER_SERVO_RESTING_DEGREES / RobotHardware.POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES;
     private static final double POLLEN_FEEDER_SERVO_UP_POSITION =
@@ -75,6 +75,9 @@ public class MecanumStraferChassis extends LinearOpMode {
     public void runOpMode() {
         // Initialize all hardware devices using the shared hardware map
         robot.init(hardwareMap);
+
+        // Ensure nectarFeederServo starts at the bottom position during INIT
+        robot.setFeederServoPosition(NECTAR_FEEDER_SERVO_BOTTOM_POSITION);
 
         // Initialize Vision (try-catch since camera may not be mounted/configured yet)
         try {
@@ -94,6 +97,7 @@ public class MecanumStraferChassis extends LinearOpMode {
                 initColorTimer.reset();
             }
             robot.setStatusLightColor(INIT_CYCLE_POSITIONS[initColorIndex]);
+            robot.setFeederServoPosition(NECTAR_FEEDER_SERVO_BOTTOM_POSITION);
 
             telemetry.addData("Status", "Chassis Initialized. Cycling status light. Ready to drive!");
             telemetry.update();
@@ -138,7 +142,7 @@ public class MecanumStraferChassis extends LinearOpMode {
             double nectarFeederServoPosition;
             if (gamepad1.left_trigger > 0.05) {
                 // Manual override: left trigger directly sets the servo's absolute position.
-                nectarFeederServoPosition = gamepad1.left_trigger;
+                nectarFeederServoPosition = -gamepad1.left_trigger;
             } else {
                 nectarFeederServoPosition = trianglePressed ? NECTAR_FEEDER_SERVO_UP_POSITION : NECTAR_FEEDER_SERVO_BOTTOM_POSITION;
             }
@@ -160,7 +164,7 @@ public class MecanumStraferChassis extends LinearOpMode {
             telemetry.addData("Intake Group Power (Feeder Motor/Servo)", "%.2f", intakePower);
             telemetry.addData("Feeder Servo Position (Commanded)", "%.2f", nectarFeederServoPosition);
             telemetry.addData("Feeder Servo Position (Actual)", "%.2f", robot.nectarFeederServo != null ? robot.nectarFeederServo.getPosition() : -1.0);
-            telemetry.addData("Feeder Servo Angle (Triangle Held)", "%.1f degrees", nectarFeederServoPosition * RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES);
+            telemetry.addData("Feeder Servo Angle (Triangle Held)", "%.1f degrees", nectarFeederServoPosition * RobotHardware.NECTAR_FEEDER_SERVO_FULL_RANGE_DEGREES);
             telemetry.addData("Pollen Feeder Servo Position (Commanded)", "%.2f", pollenFeederServoPosition);
             telemetry.addData("Pollen Feeder Servo Position (Actual)", "%.2f", robot.pollenFeederServo != null ? robot.pollenFeederServo.getPosition() : -1.0);
             telemetry.addData("Pollen Feeder Servo Angle (Square Held)", "%.1f degrees", pollenFeederServoPosition * RobotHardware.POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES);

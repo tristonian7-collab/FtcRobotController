@@ -195,11 +195,11 @@ public class RobotHardware {
     // nectarFeederServo is a ranged (positional) servo spanning FEEDER_SERVO_FULL_RANGE_DEGREES degrees
     // of physical rotation across its full position range (0.0 = 0 degrees, 1.0 = full range).
     // TODO: Calibrate this value to the actual servo's physical range of motion.
-    public static final double FEEDER_SERVO_FULL_RANGE_DEGREES = 300.0;
+    public static final double NECTAR_FEEDER_SERVO_FULL_RANGE_DEGREES = 300.0;
 
     /** Converts an angle in degrees of nectarFeederServo rotation to a position delta (0.0-1.0 scale). */
-    public static double feederServoDegreesToPosition(double degrees) {
-        return degrees / FEEDER_SERVO_FULL_RANGE_DEGREES;
+    public static double nectarfeederServoDegreesToPosition(double degrees) {
+        return degrees / NECTAR_FEEDER_SERVO_FULL_RANGE_DEGREES;
     }
 
     /** Sets the nectarFeederServo (ranged/positional gate servo) to an absolute position, clamped to [0.0, 1.0]. */
