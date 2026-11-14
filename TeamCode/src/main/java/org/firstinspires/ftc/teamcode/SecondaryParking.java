@@ -19,13 +19,15 @@ import java.util.List;
  * 1. Power up the shooter flywheel (spin-up only - gate stays closed, nothing fires) and
  *    watch for an AprilTag for up to APRILTAG_WAIT_SECONDS.
  * 2. If a tag is seen in that window:
- *    a. Start the intake spinning and run a pre-shot approach maneuver - forward
- *       PRE_SHOT_FORWARD_CM, right PRE_SHOT_STRAFE_CM, back PRE_SHOT_FORWARD_CM (undoing the
- *       forward leg), then left PRE_SHOT_STRAFE_CM (undoing the strafe) to return to the exact
- *       spot the tag was first seen at. The intake keeps running the whole time and is never
- *       stopped in between - it stays on straight into the shot itself.
- *    b. Fire the shooter.
- *    c. Run the parking movement.
+ *    a. Open the gate and start the intake spinning, wait GATE_OPEN_WAIT_SECONDS, then do the
+ *       initial backward movement (PRE_SHOT_FORWARD_CM).
+ *    b. Wait GATE_CLOSE_WAIT_SECONDS, then close the gate.
+ *    c. Do the rest of the approach movement - left PRE_SHOT_STRAFE_CM, forward
+ *       PRE_SHOT_FORWARD_CM (undoing the backward leg), then right PRE_SHOT_STRAFE_CM (undoing
+ *       the strafe) - to return to the exact spot the tag was first seen at. The intake keeps
+ *       running continuously through all of this.
+ *    d. Once back at the original position, open the gate again and fire the shooter.
+ *    e. Run the parking movement.
  * 3. If no tag is seen (including if the webcam isn't mounted/configured, which just means
  *    initAprilTag() never finds any detections), skip the approach maneuver and firing
  *    entirely and just run the parking movement - 60cm backward, then 180cm to the left
@@ -49,6 +51,11 @@ public class SecondaryParking extends LinearOpMode {
     // original spot - all while the intake runs continuously, right into the shot.
     public static final double PRE_SHOT_FORWARD_CM = 30.0;
     public static final double PRE_SHOT_STRAFE_CM = 20.0;
+
+    // How long to wait after opening the gate before starting the initial forward movement,
+    // and how long to wait after that movement before closing the gate again.
+    public static final double GATE_OPEN_WAIT_SECONDS = 5.0;
+    public static final double GATE_CLOSE_WAIT_SECONDS = 5.0;
 
     // Calibration for straight line
     public static final double LEFT_P_SCALE = 0.959;
@@ -181,34 +188,45 @@ public class SecondaryParking extends LinearOpMode {
                 telemetry.update();
                 sleep(500);
 
-                // Pre-shot approach: start the intake now and leave it running continuously -
+                // Open the gate and start the intake now, leaving it running continuously -
                 // through this whole maneuver and straight into the shot below.
+                robot.setFeederServoPosition(FEEDER_SERVO_OPEN_POSITION);
                 robot.setIntakePower(1.0);
 
-                telemetry.addData("Status", "Moving %.0fcm forward (pre-shot approach)", PRE_SHOT_FORWARD_CM);
+                telemetry.addData("Status", "Gate open - waiting %.0fs before initial movement", GATE_OPEN_WAIT_SECONDS);
                 telemetry.update();
-                moveForward(PRE_SHOT_FORWARD_CM);
-                stopRobot();
-                sleep(250);
+                sleep((long) (GATE_OPEN_WAIT_SECONDS * 1000));
 
-                telemetry.addData("Status", "Moving %.0fcm right", PRE_SHOT_STRAFE_CM);
-                telemetry.update();
-                moveRight(PRE_SHOT_STRAFE_CM);
-                stopRobot();
-                sleep(250);
-
-                telemetry.addData("Status", "Moving %.0fcm back", PRE_SHOT_FORWARD_CM);
+                telemetry.addData("Status", "Moving %.0fcm backward (pre-shot approach)", PRE_SHOT_FORWARD_CM);
                 telemetry.update();
                 moveBackward(PRE_SHOT_FORWARD_CM);
                 stopRobot();
-                sleep(250);
 
-                telemetry.addData("Status", "Returning %.0fcm left to original position", PRE_SHOT_STRAFE_CM);
+                telemetry.addData("Status", "Waiting %.0fs before closing gate", GATE_CLOSE_WAIT_SECONDS);
+                telemetry.update();
+                sleep((long) (GATE_CLOSE_WAIT_SECONDS * 1000));
+                robot.setFeederServoPosition(FEEDER_SERVO_BOTTOM_POSITION);
+
+                telemetry.addData("Status", "Moving %.0fcm left", PRE_SHOT_STRAFE_CM);
                 telemetry.update();
                 moveLeft(PRE_SHOT_STRAFE_CM);
                 stopRobot();
                 sleep(250);
 
+                telemetry.addData("Status", "Moving %.0fcm forward", PRE_SHOT_FORWARD_CM);
+                telemetry.update();
+                moveForward(PRE_SHOT_FORWARD_CM);
+                stopRobot();
+                sleep(250);
+
+                telemetry.addData("Status", "Returning %.0fcm right to original position", PRE_SHOT_STRAFE_CM);
+                telemetry.update();
+                moveRight(PRE_SHOT_STRAFE_CM);
+                stopRobot();
+                sleep(250);
+
+                // Back at the original position - fireShooter() re-opens the gate and runs
+                // the rest (intake + shooter) to actually fire.
                 fireShooter(seenTagId);
             } else {
                 telemetry.addData("AprilTag Status", "NOT seen within %.0fs - skipping shot", APRILTAG_WAIT_SECONDS);

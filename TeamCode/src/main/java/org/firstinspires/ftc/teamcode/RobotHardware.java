@@ -37,7 +37,7 @@ public class RobotHardware {
     // Autonomous) so shooting speed stays consistent across modes. The getter/setter below
     // still allow an individual OpMode to override this with a different target RPM later if
     // ever needed; none currently do.
-    public static final double DEFAULT_SHOOTER_RPM = 30.0;
+    public static final double DEFAULT_SHOOTER_RPM = 25.0;
 
     public DcMotor feederMotor = null;
     public Servo   nectarFeederServo = null;
