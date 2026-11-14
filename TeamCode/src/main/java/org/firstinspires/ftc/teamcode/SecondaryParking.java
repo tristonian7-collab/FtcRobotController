@@ -62,7 +62,7 @@ public class SecondaryParking extends LinearOpMode {
     public static final double START_COMPENSATION = 0.0;
     public static final double STOP_COMPENSATION = 0.08;
 
-    // feederServo is a ranged (positional) servo: "bottom" is its closed/resting position, and
+    // nectarFeederServo is a ranged (positional) servo: "bottom" is its closed/resting position, and
     // it moves up FEEDER_SERVO_ROTATE_DEGREES to its open ("firing") position.
     public static final double FEEDER_SERVO_FULL_RANGE_DEGREES = RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES;
     public static final double FEEDER_SERVO_ROTATE_DEGREES = 90.0;
@@ -250,9 +250,9 @@ public class SecondaryParking extends LinearOpMode {
 
     /** Opens the feeder gate and runs the intake group for SHOOT_DURATION_SECONDS to fire. */
     private void fireShooter(int seenTagId) {
-        if (robot.feederServo != null) {
+        if (robot.nectarFeederServo != null) {
             telemetry.addData("AprilTag Status", "SEEN! (ID %d)", seenTagId);
-            telemetry.addData("Status", "Moving feederServo to open position (90 degrees up)");
+            telemetry.addData("Status", "Moving nectarFeederServo to open position (90 degrees up)");
             telemetry.update();
             robot.setFeederServoPosition(FEEDER_SERVO_OPEN_POSITION);
             sleep((long) (FEEDER_SERVO_ROTATE_DURATION_SECONDS * 1000));

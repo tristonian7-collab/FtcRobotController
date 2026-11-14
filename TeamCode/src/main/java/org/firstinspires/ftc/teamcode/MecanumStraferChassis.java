@@ -42,7 +42,7 @@ public class MecanumStraferChassis extends LinearOpMode {
     };
     private static final double INIT_CYCLE_SECONDS_PER_COLOR = 0.5;
 
-    // --- Gate Servo Momentary Hold Controls (Triangle = feederServo, Square = pollenFeederServo) ---
+    // --- Gate Servo Momentary Hold Controls (Triangle = nectarFeederServo, Square = pollenFeederServo) ---
     // Both servos are ranged (positional) servos, so "up"/"down" are absolute positions that are
     // commanded directly every loop based on whether the button is currently held; the servo's
     // own hardware handles physically moving there. Triangle: held = up, released = down.
@@ -59,7 +59,7 @@ public class MecanumStraferChassis extends LinearOpMode {
             FEEDER_SERVO_BOTTOM_POSITION
                     + (FEEDER_SERVO_ROTATE_DEGREES / RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES);
 
-    // pollenFeederServo: released (resting) = 120 degrees, held (square pressed) = 20 degrees.
+    // pollenFeederServo: released (resting) = 120 degrees, held (square pressed) = 20 degarees.
     private static final double POLLEN_FEEDER_SERVO_RESTING_DEGREES = 120.0;
     private static final double POLLEN_FEEDER_SERVO_PRESSED_DEGREES = 20.0;
     private static final double POLLEN_FEEDER_SERVO_BOTTOM_POSITION =
@@ -120,15 +120,15 @@ public class MecanumStraferChassis extends LinearOpMode {
             // 3-5. Mecanum Kinematics Power Distribution, normalization, and motor output
             robot.driveMecanum(forward, strafe, turn);
 
-            // 6. Control Intake Group (feederMotor, feederServo) together with R2 Trigger
+            // 6. Control Intake Group (feederMotor, nectarFeederServo) together with R2 Trigger
             double intakePower = gamepad1.right_trigger;
             robot.setIntakePower(intakePower);
 
-            // Triangle holds feederServo (gate) up for as long as it's held, and releases it back
+            // Triangle holds nectarFeederServo (gate) up for as long as it's held, and releases it back
             // down the instant triangle is let go. Square controls pollenFeederServo: it rests at
             // 120 degrees and moves down to 20 degrees for as long as square is held, snapping
             // back to 120 degrees the instant square is released. The left trigger still acts as
-            // a manual override for feederServo, directly setting its absolute position when
+            // a manual override for nectarFeederServo, directly setting its absolute position when
             // pressed (takes priority over triangle).
             boolean trianglePressed = gamepad1.triangle;
             boolean squarePressed = gamepad1.square;
@@ -159,7 +159,7 @@ public class MecanumStraferChassis extends LinearOpMode {
             telemetry.addData("Motor Target Powers", "BL: (%.2f) | BR: (%.2f)", robot.backLeftDrive.getPower(), robot.backRightDrive.getPower());
             telemetry.addData("Intake Group Power (Feeder Motor/Servo)", "%.2f", intakePower);
             telemetry.addData("Feeder Servo Position (Commanded)", "%.2f", feederServoPosition);
-            telemetry.addData("Feeder Servo Position (Actual)", "%.2f", robot.feederServo != null ? robot.feederServo.getPosition() : -1.0);
+            telemetry.addData("Feeder Servo Position (Actual)", "%.2f", robot.nectarFeederServo != null ? robot.nectarFeederServo.getPosition() : -1.0);
             telemetry.addData("Feeder Servo Angle (Triangle Held)", "%.1f degrees", feederServoPosition * RobotHardware.FEEDER_SERVO_FULL_RANGE_DEGREES);
             telemetry.addData("Pollen Feeder Servo Position (Commanded)", "%.2f", pollenFeederServoPosition);
             telemetry.addData("Pollen Feeder Servo Position (Actual)", "%.2f", robot.pollenFeederServo != null ? robot.pollenFeederServo.getPosition() : -1.0);

@@ -4,7 +4,6 @@ import android.util.Size;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -21,6 +20,7 @@ public class DistanceTest extends LinearOpMode {
     // --- Status Light PWM Positions ---
     private static final double STATUS_LIGHT_WHITE = 0.999;
     private static final double STATUS_LIGHT_GREEN = 0.500;
+    private static final double STATUS_LIGHT_RED = 0.278;
 
     // --- Hardware Members ---
     private Servo statusLight = null;
@@ -31,7 +31,6 @@ public class DistanceTest extends LinearOpMode {
 
     // --- Light PWM Control Members ---
     private double lightPwm = STATUS_LIGHT_WHITE;
-    private boolean manualOverride = false;
 
     @Override
     public void runOpMode() {
@@ -89,7 +88,7 @@ public class DistanceTest extends LinearOpMode {
                         telemetry.addData("Pitch", "%.2f degrees", detection.ftcPose.pitch);
                         telemetry.addData("Roll", "%.2f degrees", detection.ftcPose.roll);
 
-                        if (range >= 140.0 && range <= 170.0) {
+                        if (range >= 110.0 && range <= 130.0) {
                             tagInRange = true;
                         }
                     } else {
@@ -101,27 +100,11 @@ public class DistanceTest extends LinearOpMode {
                 telemetry.addData("AprilTag Status", "Camera/Processor not initialized");
             }
 
-            // --- Gamepad1 Right Joystick Light Control ---
-            // Invert gamepad1.right_stick_y so pushing UP increases the PWM signal position
-            double stickInput = -gamepad1.right_stick_y;
-            if (Math.abs(stickInput) > 0.05) {
-                manualOverride = true;
-                lightPwm += stickInput * 0.003; // Adjust PWM signal position smoothly
-                lightPwm = Range.clip(lightPwm, 0.0, 1.0);
-            }
-
-            // Pressing 'A' button on gamepad1 resets back to automatic AprilTag light mode
-            if (gamepad1.a) {
-                manualOverride = false;
-            }
-
-            // Determine light color / PWM signal based on manual override or AprilTag detection
-            if (!manualOverride) {
-                if (tagInRange) {
-                    lightPwm = STATUS_LIGHT_GREEN;
-                } else {
-                    lightPwm = STATUS_LIGHT_WHITE;
-                }
+            // Determine light color / PWM signal based on AprilTag detection
+            if (tagInRange) {
+                lightPwm = STATUS_LIGHT_GREEN;
+            } else {
+                lightPwm = STATUS_LIGHT_RED;
             }
 
             // Send PWM signal to the status light servo port
@@ -131,16 +114,12 @@ public class DistanceTest extends LinearOpMode {
 
             // Output Light PWM telemetry and status
             telemetry.addData("Light PWM Signal", "%.3f", lightPwm);
-            if (manualOverride) {
-                telemetry.addData("Status Light", "MANUAL (Right Stick Y: %.2f | Press 'A' to reset)", gamepad1.right_stick_y);
+            if (tagInRange) {
+                telemetry.addData("Status Light", "GREEN (Tag In Range: 110-130cm)");
+            } else if (tagFound) {
+                telemetry.addData("Status Light", "RED (Tag Detected, Out of Range)");
             } else {
-                if (tagInRange) {
-                    telemetry.addData("Status Light", "GREEN (Tag In Range: 140-160cm)");
-                } else if (tagFound) {
-                    telemetry.addData("Status Light", "WHITE (Tag Detected, Out of Range)");
-                } else {
-                    telemetry.addData("Status Light", "WHITE (No Tag)");
-                }
+                telemetry.addData("Status Light", "WHITE (No Tag)");
             }
 
             telemetry.update();

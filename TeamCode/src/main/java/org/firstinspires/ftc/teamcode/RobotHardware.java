@@ -27,7 +27,7 @@ public class RobotHardware {
 
     // --- Shooter / Intake Group ---
     // feederMotor rolls the ball into the robot (part of the intake group).
-    // feederServo is a separate ranged (positional) gate servo that pushes the ball from the
+    // nectarFeederServo is a separate ranged (positional) gate servo that pushes the ball from the
     // intake into the shooter by moving to an absolute position (not power-driven).
     public DcMotor shooter     = null;
     public double ticksPerRev;
@@ -40,8 +40,10 @@ public class RobotHardware {
     public static final double DEFAULT_SHOOTER_RPM = 30.0;
 
     public DcMotor feederMotor = null;
-    public Servo   feederServo = null;
+    public Servo   nectarFeederServo = null;
     public Servo   pollenFeederServo = null;
+    public Servo   rampServo = null;
+
 
     // --- Status Light / Sensors ---
     public Servo statusLight = null;
@@ -50,7 +52,7 @@ public class RobotHardware {
     /**
      * Initializes all hardware devices using the standard REV Hub configuration names.
      * frontLeftDrive/frontRightDrive/backLeftDrive/backRightDrive/shooter
-     * are required and will throw if missing from the configuration. feederMotor, feederServo,
+     * are required and will throw if missing from the configuration. feederMotor, nectarFeederServo,
      * statusLight, and imu are optional (left null if not found/configured) so calling code
      * should null-check them before use.
      */
@@ -70,15 +72,21 @@ public class RobotHardware {
         }
 
         try {
-            feederServo = hardwareMap.get(Servo.class, "feederServo");
+            nectarFeederServo = hardwareMap.get(Servo.class, "feederServo");
         } catch (Exception e) {
-            feederServo = null;
+            nectarFeederServo = null;
         }
 
         try {
             pollenFeederServo = hardwareMap.get(Servo.class, "pollenFeederServo");
         } catch (Exception e) {
             pollenFeederServo = null;
+        }
+
+        try {
+            rampServo = hardwareMap.get(Servo.class, "rampServo");
+        } catch (Exception e) {
+            rampServo = null;
         }
 
         try {
@@ -102,11 +110,14 @@ public class RobotHardware {
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         shooter.setDirection(DcMotor.Direction.FORWARD);
-        if (feederServo != null) {
-            feederServo.setDirection(Servo.Direction.FORWARD);
+        if (nectarFeederServo != null) {
+            nectarFeederServo.setDirection(Servo.Direction.FORWARD);
         }
         if (pollenFeederServo != null) {
             pollenFeederServo.setDirection(Servo.Direction.FORWARD);
+        }
+        if (rampServo != null) {
+            rampServo.setDirection(Servo.Direction.FORWARD);
         }
         if (feederMotor != null) {
             feederMotor.setDirection(DcMotor.Direction.FORWARD);
@@ -172,7 +183,7 @@ public class RobotHardware {
 
     /**
      * Sets power for the intake group (feederMotor).
-     * feederServo is a separate ranged (positional) gate servo controlled via
+     * nectarFeederServo is a separate ranged (positional) gate servo controlled via
      * {@link #setFeederServoPosition(double)}.
      */
     public void setIntakePower(double power) {
@@ -181,29 +192,29 @@ public class RobotHardware {
         }
     }
 
-    // feederServo is a ranged (positional) servo spanning FEEDER_SERVO_FULL_RANGE_DEGREES degrees
+    // nectarFeederServo is a ranged (positional) servo spanning FEEDER_SERVO_FULL_RANGE_DEGREES degrees
     // of physical rotation across its full position range (0.0 = 0 degrees, 1.0 = full range).
     // TODO: Calibrate this value to the actual servo's physical range of motion.
     public static final double FEEDER_SERVO_FULL_RANGE_DEGREES = 300.0;
 
-    /** Converts an angle in degrees of feederServo rotation to a position delta (0.0-1.0 scale). */
+    /** Converts an angle in degrees of nectarFeederServo rotation to a position delta (0.0-1.0 scale). */
     public static double feederServoDegreesToPosition(double degrees) {
         return degrees / FEEDER_SERVO_FULL_RANGE_DEGREES;
     }
 
-    /** Sets the feederServo (ranged/positional gate servo) to an absolute position, clamped to [0.0, 1.0]. */
+    /** Sets the nectarFeederServo (ranged/positional gate servo) to an absolute position, clamped to [0.0, 1.0]. */
     public void setFeederServoPosition(double position) {
-        if (feederServo != null) {
-            feederServo.setPosition(Range.clip(position, 0.0, 1.0));
+        if (nectarFeederServo != null) {
+            nectarFeederServo.setPosition(Range.clip(position, 0.0, 1.0));
         }
     }
 
-    /** Returns the feederServo's last-commanded position, or 0.0 if the servo isn't present. */
+    /** Returns the nectarFeederServo's last-commanded position, or 0.0 if the servo isn't present. */
     public double getFeederServoPosition() {
-        return feederServo != null ? feederServo.getPosition() : 0.0;
+        return nectarFeederServo != null ? nectarFeederServo.getPosition() : 0.0;
     }
 
-    // pollenFeederServo is a separate ranged (positional) gate servo, same style as feederServo
+    // pollenFeederServo is a separate ranged (positional) gate servo, same style as nectarFeederServo
     // above, spanning POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES degrees of physical rotation across
     // its full position range (0.0 = 0 degrees, 1.0 = full range).
     // TODO: Calibrate this value to the actual servo's physical range of motion.
@@ -220,6 +231,29 @@ public class RobotHardware {
     public double getPollenFeederServoPosition() {
         return pollenFeederServo != null ? pollenFeederServo.getPosition() : 0.0;
     }
+
+    // rampFeederServo is a ranged (positional) servo spanning FEEDER_SERVO_FULL_RANGE_DEGREES degrees
+    // of physical rotation across its full position range (0.0 = 0 degrees, 1.0 = full range).
+    // TODO: Calibrate this value to the actual servo's physical range of motion.
+    public static final double RAMP_SERVO_FULL_RANGE_DEGREES = 300.0;
+
+    /** Converts an angle in degrees of rampServo rotation to a position delta (0.0-1.0 scale). */
+    public static double rampServoDegreesToPosition(double degrees) {
+        return degrees / RAMP_SERVO_FULL_RANGE_DEGREES;
+    }
+
+    /** Sets the rampServo (ranged/positional gate servo) to an absolute position, clamped to [0.0, 1.0]. */
+    public void setRampServoPosition(double position) {
+        if (rampServo != null) {
+            rampServo.setPosition(Range.clip(position, 0.0, 1.0));
+        }
+    }
+
+    /** Returns the rampFeederServo's last-commanded position, or 0.0 if the servo isn't present. */
+    public double getRampServoPosition() {
+        return rampServo != null ? rampServo.getPosition() : 0.0;
+    }
+
 
     /**
      * Sets the target flywheel (shooter) speed in RPM using closed-loop velocity control via DcMotorEx.

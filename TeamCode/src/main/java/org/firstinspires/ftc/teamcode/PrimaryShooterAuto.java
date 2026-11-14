@@ -44,7 +44,7 @@ public class PrimaryShooterAuto extends LinearOpMode {
     public static final double SPEED_GAIN = 0.03;       // Proportional gain for speed
     public static final double TURN_GAIN = 0.02;        // Proportional gain for steering
 
-    // feederServo is a ranged (positional) servo, so "bottom" is an absolute position
+    // nectarFeederServo is a ranged (positional) servo, so "bottom" is an absolute position
     // (FEEDER_SERVO_BOTTOM_POSITION) rather than 0 power. After FEEDER_SERVO_BOTTOM_WAIT_MS
     // elapses, it moves to FEEDER_SERVO_OPEN_POSITION (90 degrees "up" from bottom).
     // FEEDER_SERVO_DEGREES_PER_SECOND estimates how long a position change takes to physically
@@ -61,7 +61,7 @@ public class PrimaryShooterAuto extends LinearOpMode {
     public static final double FEEDER_SERVO_ROTATE_DURATION_SECONDS =
             FEEDER_SERVO_ROTATE_DEGREES / FEEDER_SERVO_DEGREES_PER_SECOND;
 
-    // Gate (feederServo) end-of-auto motion: after the final movement, the gate moves up
+    // Gate (nectarFeederServo) end-of-auto motion: after the final movement, the gate moves up
     // GATE_ROTATE_DEGREES degrees from its open position, then immediately moves back down
     // the same amount.
     public static final double GATE_ROTATE_DEGREES = 25.0;
@@ -86,11 +86,11 @@ public class PrimaryShooterAuto extends LinearOpMode {
         // Initialize all hardware devices using the shared hardware map
         robot.init(hardwareMap);
 
-        // Wait FEEDER_SERVO_BOTTOM_WAIT_MS before commanding feederServo at all, so it does not
+        // Wait FEEDER_SERVO_BOTTOM_WAIT_MS before commanding nectarFeederServo at all, so it does not
         // immediately snap to its "bottom" (closed) position the instant the OpMode is INIT'd.
         sleep(FEEDER_SERVO_BOTTOM_WAIT_MS);
 
-        // feederServo starts held at its "bottom" (closed) resting position; it will move to
+        // nectarFeederServo starts held at its "bottom" (closed) resting position; it will move to
         // its open position (90 degrees up) later, once FEEDER_SERVO_BOTTOM_WAIT_MS (measured
         // from waitForStart()) has elapsed in the shooting sequence below.
         robot.setFeederServoPosition(FEEDER_SERVO_BOTTOM_POSITION);
@@ -113,11 +113,11 @@ public class PrimaryShooterAuto extends LinearOpMode {
             // Flywheel (shooter) spins continuously at RobotHardware.DEFAULT_SHOOTER_RPM for the
             // entire OpMode. Start it immediately at the start of the OpMode so it has the full
             // FEEDER_SERVO_BOTTOM_WAIT_MS window to reach speed while the robot moves backward
-            // and the gate (feederServo) stays closed.
+            // and the gate (nectarFeederServo) stays closed.
             robot.setTargetShooterRPM(RobotHardware.DEFAULT_SHOOTER_RPM);
 
             // Move backward 5cm immediately as well, in parallel with the shooter spin-up and
-            // gate wait below. feederServo stays held at its bottom (closed) position throughout.
+            // gate wait below. nectarFeederServo stays held at its bottom (closed) position throughout.
             // (Reduced from the original 20cm by 15cm.)
             telemetry.addData("Status", "Spinning up shooter - moving 5cm backward");
             telemetry.addData("feeder Servo", "Holding at bottom (closed) position");
@@ -126,7 +126,7 @@ public class PrimaryShooterAuto extends LinearOpMode {
 //            moveBackward(2.0);
             stopRobot();
 
-            // feederServo stays held at its bottom (closed) position until FEEDER_SERVO_BOTTOM_WAIT_MS
+            // nectarFeederServo stays held at its bottom (closed) position until FEEDER_SERVO_BOTTOM_WAIT_MS
             // has elapsed since the start of the OpMode (covers the backward move above).
             long elapsedSinceStartMs = (long) runtime.milliseconds();
             long remainingBottomWaitMs = FEEDER_SERVO_BOTTOM_WAIT_MS - elapsedSinceStartMs;
@@ -136,16 +136,16 @@ public class PrimaryShooterAuto extends LinearOpMode {
                 sleep(remainingBottomWaitMs);
             }
 
-            // After the bottom-position wait, move feederServo to its open position (90 degrees up).
-            if (robot.feederServo != null) {
-                telemetry.addData("Status", "Moving feederServo to open position (90 degrees up)");
+            // After the bottom-position wait, move nectarFeederServo to its open position (90 degrees up).
+            if (robot.nectarFeederServo != null) {
+                telemetry.addData("Status", "Moving nectarFeederServo to open position (90 degrees up)");
                 telemetry.update();
                 robot.setFeederServoPosition(FEEDER_SERVO_OPEN_POSITION);
                 sleep((long) (FEEDER_SERVO_ROTATE_DURATION_SECONDS * 1000));
             }
 
             // Spin the intake group (feederMotor) continuously for the
-            // entire OpMode. feederServo is a positional gate
+            // entire OpMode. nectarFeederServo is a positional gate
             // and simply holds at its open position (set above) for the rest of the OpMode.
             if (robot.feederMotor != null) {
                 robot.feederMotor.setPower(1.0);
@@ -161,14 +161,14 @@ public class PrimaryShooterAuto extends LinearOpMode {
                 // Flywheel remains spinning continuously at RobotHardware.DEFAULT_SHOOTER_RPM
                 robot.setTargetShooterRPM(RobotHardware.DEFAULT_SHOOTER_RPM);
 
-                // feederServo gate was already moved clockwise to its open position after the
+                // nectarFeederServo gate was already moved clockwise to its open position after the
                 // 4-second wait above and simply stays there for the rest of the shoot loop.
 
                 // Show what the software thinks is happening
                 telemetry.addData("Status", "feeder Running");
                 telemetry.addData("Timer", "%.1f / 10.0s", timer.seconds());
-                if (robot.feederServo != null) {
-                    telemetry.addData("feeder Servo", "Position: %.2f", robot.feederServo.getPosition());
+                if (robot.nectarFeederServo != null) {
+                    telemetry.addData("feeder Servo", "Position: %.2f", robot.nectarFeederServo.getPosition());
                 } else {
                     telemetry.addData("feeder Servo", "NOT FOUND");
                 }
@@ -235,7 +235,7 @@ public class PrimaryShooterAuto extends LinearOpMode {
             }
 
             // Stop the drive train and intake group (feederMotor).
-            // feederServo is a positional gate and simply remains at its current position.
+            // nectarFeederServo is a positional gate and simply remains at its current position.
             stopRobot();
             robot.setIntakePower(0.0);
 
@@ -271,9 +271,9 @@ public class PrimaryShooterAuto extends LinearOpMode {
             telemetry.update();
             sleep(500);
 
-            // After the last movement, move the gate (feederServo) 25 degrees up from its open
+            // After the last movement, move the gate (nectarFeederServo) 25 degrees up from its open
             // position, then immediately move it back down the same amount.
-            if (robot.feederServo != null) {
+            if (robot.nectarFeederServo != null) {
                 telemetry.addData("Status", "Gate: moving 25 degrees up");
                 telemetry.update();
                 robot.setFeederServoPosition(GATE_UP_POSITION);
