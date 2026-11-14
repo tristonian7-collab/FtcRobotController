@@ -53,19 +53,12 @@ public class MecanumStraferChassis extends LinearOpMode {
     // RobotHardware) to each servo's actual physical range of motion so these degree positions
     // are accurate. If a direction is backwards on the robot, flip that servo's direction in
     // RobotHardware#init instead.
-    private static final double NECTAR_FEEDER_SERVO_ROTATE_DEGREES = 120.0;
-    private static final double NECTAR_FEEDER_SERVO_BOTTOM_POSITION = 0.0;
-    private static final double NECTAR_FEEDER_SERVO_UP_POSITION =
-            NECTAR_FEEDER_SERVO_BOTTOM_POSITION
-                    + (NECTAR_FEEDER_SERVO_ROTATE_DEGREES / RobotHardware.NECTAR_FEEDER_SERVO_FULL_RANGE_DEGREES);
+    // --- Direct PWM Servo Positions ---
+    private static final double NECTAR_FEEDER_DEFAULT_PWM = 0.4;
+    private static final double NECTAR_FEEDER_PRESSED_PWM = 0.8;
 
-    // pollenFeederServo: released (resting) = 120 degrees, held (square pressed) = 20 degrees.
-    private static final double POLLEN_FEEDER_SERVO_RESTING_DEGREES = 120.0;
-    private static final double POLLEN_FEEDER_SERVO_PRESSED_DEGREES = 20.0;
-    private static final double POLLEN_FEEDER_SERVO_BOTTOM_POSITION =
-            POLLEN_FEEDER_SERVO_RESTING_DEGREES / RobotHardware.POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES;
-    private static final double POLLEN_FEEDER_SERVO_UP_POSITION =
-            POLLEN_FEEDER_SERVO_PRESSED_DEGREES / RobotHardware.POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES;
+    private static final double POLLEN_FEEDER_DEFAULT_PWM = 0.4;
+    private static final double POLLEN_FEEDER_PRESSED_PWM = 0.1;
 
     // --- Vision Members ---
     private VisionPortal visionPortal = null;
@@ -76,8 +69,8 @@ public class MecanumStraferChassis extends LinearOpMode {
         // Initialize all hardware devices using the shared hardware map
         robot.init(hardwareMap);
 
-        // Ensure nectarFeederServo starts at the bottom position during INIT
-        robot.setFeederServoPosition(NECTAR_FEEDER_SERVO_BOTTOM_POSITION);
+        // Ensure nectarFeederServo starts at default PWM position during INIT
+        robot.setFeederServoPosition(NECTAR_FEEDER_DEFAULT_PWM);
 
         // Initialize Vision (try-catch since camera may not be mounted/configured yet)
         try {
@@ -97,7 +90,7 @@ public class MecanumStraferChassis extends LinearOpMode {
                 initColorTimer.reset();
             }
             robot.setStatusLightColor(INIT_CYCLE_POSITIONS[initColorIndex]);
-            robot.setFeederServoPosition(NECTAR_FEEDER_SERVO_BOTTOM_POSITION);
+            robot.setFeederServoPosition(NECTAR_FEEDER_DEFAULT_PWM);
 
             telemetry.addData("Status", "Chassis Initialized. Cycling status light. Ready to drive!");
             telemetry.update();
@@ -128,12 +121,6 @@ public class MecanumStraferChassis extends LinearOpMode {
             double intakePower = gamepad1.right_trigger;
             robot.setIntakePower(intakePower);
 
-            // Triangle holds nectarFeederServo (gate) up for as long as it's held, and releases it back
-            // down the instant triangle is let go. Square controls pollenFeederServo: it rests at
-            // 120 degrees and moves down to 20 degrees for as long as square is held, snapping
-            // back to 120 degrees the instant square is released. The left trigger still acts as
-            // a manual override for nectarFeederServo, directly setting its absolute position when
-            // pressed (takes priority over triangle).
             boolean trianglePressed = gamepad1.triangle;
             boolean squarePressed = gamepad1.square;
             telemetry.addData("DEBUG gamepad1.square (raw)", squarePressed);
@@ -141,18 +128,14 @@ public class MecanumStraferChassis extends LinearOpMode {
 
             double nectarFeederServoPosition;
             if (gamepad1.left_trigger > 0.05) {
-                // Manual override: left trigger directly sets the servo's absolute position.
-                nectarFeederServoPosition = -gamepad1.left_trigger;
+                nectarFeederServoPosition = gamepad1.left_trigger;
             } else {
-                nectarFeederServoPosition = trianglePressed ? NECTAR_FEEDER_SERVO_UP_POSITION : NECTAR_FEEDER_SERVO_BOTTOM_POSITION;
+                nectarFeederServoPosition = trianglePressed ? NECTAR_FEEDER_PRESSED_PWM : NECTAR_FEEDER_DEFAULT_PWM;
             }
             robot.setFeederServoPosition(nectarFeederServoPosition);
 
-            // pollenFeederServo rests at 120 degrees (POLLEN_FEEDER_SERVO_BOTTOM_POSITION) when
-            // square is released, and holding square drives it down to 20 degrees
-            // (POLLEN_FEEDER_SERVO_UP_POSITION) for as long as it's held.
             double pollenFeederServoPosition =
-                    squarePressed ? POLLEN_FEEDER_SERVO_UP_POSITION : POLLEN_FEEDER_SERVO_BOTTOM_POSITION;
+                    squarePressed ? POLLEN_FEEDER_PRESSED_PWM : POLLEN_FEEDER_DEFAULT_PWM;
             robot.setPollenFeederServoPosition(pollenFeederServoPosition);
 
             robot.setTargetShooterRPM(RobotHardware.DEFAULT_SHOOTER_RPM);
@@ -164,10 +147,8 @@ public class MecanumStraferChassis extends LinearOpMode {
             telemetry.addData("Intake Group Power (Feeder Motor/Servo)", "%.2f", intakePower);
             telemetry.addData("Feeder Servo Position (Commanded)", "%.2f", nectarFeederServoPosition);
             telemetry.addData("Feeder Servo Position (Actual)", "%.2f", robot.nectarFeederServo != null ? robot.nectarFeederServo.getPosition() : -1.0);
-            telemetry.addData("Feeder Servo Angle (Triangle Held)", "%.1f degrees", nectarFeederServoPosition * RobotHardware.NECTAR_FEEDER_SERVO_FULL_RANGE_DEGREES);
             telemetry.addData("Pollen Feeder Servo Position (Commanded)", "%.2f", pollenFeederServoPosition);
             telemetry.addData("Pollen Feeder Servo Position (Actual)", "%.2f", robot.pollenFeederServo != null ? robot.pollenFeederServo.getPosition() : -1.0);
-            telemetry.addData("Pollen Feeder Servo Angle (Square Held)", "%.1f degrees", pollenFeederServoPosition * RobotHardware.POLLEN_FEEDER_SERVO_FULL_RANGE_DEGREES);
             telemetry.addData("Target RPM: ", robot.getTargetShooterRPM());
             telemetry.addData("RPMs: ", robot.getMotorRPM());
 
